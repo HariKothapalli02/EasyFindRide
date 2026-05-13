@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-orange: #FF5F00;
+  --color-orange-dark: #D94200;
+  --color-orange-light: #FF8A45;
+  --color-orange-pale: #FFF5F0;
+  --color-black: #0F0F0F;
+  --color-white: #FFFFFF;
+  --color-gray-bg: #F8F9FA;
+
+  --font-heading: "Bebas Neue", cursive;
+  --font-body: "Nunito", sans-serif;
+
+  --shadow-orange: 0 12px 30px rgba(255, 95, 0, 0.25);
+}
+
+:root {
+  --orange: #FF5F00;
+  --orange-dark: #D94200;
+  --orange-light: #FF8A45;
+  --orange-pale: #FFF5F0;
+  --black: #0F0F0F;
+  --white: #FFFFFF;
+  --gray-bg: #F8F9FA;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background-color: #fdfdfd;
+  color: var(--black);
+  margin: 0;
+  padding: 0;
+}
+
+.font-heading {
+  font-family: 'Bebas Neue', cursive;
+}
+
+/* Mobile-first wrapper constraints */
+.app-wrapper {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--white);
+  box-shadow: 0 0 50px rgba(0,0,0,0.05);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bottom-nav-spacer {
+  height: 80px;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-in forwards;
+}
