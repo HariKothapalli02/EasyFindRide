@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Github as GitHubIcon } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import api from '../utils/api';
 
 const LoginPage = () => {
@@ -101,21 +101,8 @@ const LoginPage = () => {
                         </button>
                     </form>
 
-                    <div className="mt-8 flex items-center gap-4">
-                        <div className="flex-1 h-[1px] bg-black/5" />
-                        <span className="text-[10px] font-black text-[#ccc] uppercase tracking-widest">or continue with</span>
-                        <div className="flex-1 h-[1px] bg-black/5" />
-                    </div>
-
-                    <div className="mt-6 flex gap-4">
-                        <button className="flex-1 py-4 bg-grayBg rounded-2xl flex items-center justify-center gap-2 hover:bg-black/5 transition-all active:scale-95">
-                            <GitHubIcon size={20} />
-                            <span className="font-bold text-sm">GitHub</span>
-                        </button>
-                        <button className="flex-1 py-4 bg-grayBg rounded-2xl flex items-center justify-center gap-2 hover:bg-black/5 transition-all active:scale-95">
-                            <div className="w-5 h-5 bg-orange rounded-full flex items-center justify-center text-white text-[10px]">G</div>
-                            <span className="font-bold text-sm">Google</span>
-                        </button>
+                    <div className="mt-8 text-center">
+                        <p className="text-[10px] font-black text-[#ccc] uppercase tracking-widest">Secured by EasyFindRide Protocol</p>
                     </div>
                 </div>
             </div>
