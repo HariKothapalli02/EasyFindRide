@@ -3,19 +3,44 @@ import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
 import { MapPin, ArrowRight, ShieldCheck, Clock, Wallet, Navigation, Phone, ChevronRight, Loader2, Star, ArrowUpDown } from 'lucide-react';
 import api, { socket } from '../utils/api';
-import { geocode } from '../utils/osrmService';
+import { geocode, searchLocations } from '../utils/osrmService';
+import MapTracking, { pickupIcon, dropIcon } from '../components/MapTracking';
+import RoutePolyline from '../components/RoutePolyline';
+import { Marker, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import DriverHome from './DriverHome';
 
+const AutoCenter = ({ points }) => {
+    const map = useMap();
+    React.useEffect(() => {
+        if (points && points.length > 0) {
+            const validPoints = points.filter(p => p && p[0] && p[1]);
+            if (validPoints.length > 0) {
+                map.fitBounds(validPoints, { padding: [50, 50] });
+            }
+        }
+    }, [points, map]);
+    return null;
+};
+
 const HomePage = () => {
+    const userRole = localStorage.getItem('userRole');
+    const navigate = useNavigate();
+
+    if (userRole === 'driver') {
+        return <DriverHome />;
+    }
+
     const [pickup, setPickup] = useState('');
     const [drop, setDrop] = useState('');
+    const [pickupCoords, setPickupCoords] = useState(null);
+    const [dropCoords, setDropCoords] = useState(null);
+    const [pickupSuggestions, setPickupSuggestions] = useState([]);
+    const [dropSuggestions, setDropSuggestions] = useState([]);
     const [city, setCity] = useState('Hyderabad');
     const [vehicles, setVehicles] = useState([]);
     const [showVehicles, setShowVehicles] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
-    const userRole = localStorage.getItem('userRole');
-    const navigate = useNavigate();
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
@@ -36,9 +61,29 @@ const HomePage = () => {
         };
     }, [navigate]);
 
-    if (userRole === 'driver') {
-        return <DriverHome />;
-    }
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (pickup.length > 2 && !pickupCoords) {
+                const results = await searchLocations(pickup);
+                setPickupSuggestions(results);
+            } else {
+                setPickupSuggestions([]);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [pickup, pickupCoords]);
+
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (drop.length > 2 && !dropCoords) {
+                const results = await searchLocations(drop);
+                setDropSuggestions(results);
+            } else {
+                setDropSuggestions([]);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [drop, dropCoords]);
 
     const getVehicles = async () => {
         if (!pickup || !drop) {
@@ -57,18 +102,13 @@ const HomePage = () => {
     const bookRide = async (v) => {
         try {
             const token = localStorage.getItem('token');
-            // Use full pickup location for wider matching on driver side
-            const bookingCity = pickup.trim() || 'Hyderabad';
+            const bookingCity = city.trim() || 'Hyderabad';
             
-            // Geocode pickup and drop
-            const pCoords = await geocode(pickup);
-            const dCoords = await geocode(drop);
-
             await api.post('/rides/book', {
                 pickup,
-                pickupCoords: pCoords,
+                pickupCoords,
                 drop,
-                dropCoords: dCoords,
+                dropCoords,
                 vehicleType: v.type,
                 price: v.price,
                 city: bookingCity
@@ -112,24 +152,28 @@ const HomePage = () => {
                 </div>
             )}
 
-            {/* HERO */}
-            <div className="relative p-6 pb-5 overflow-hidden bg-white">
+            {/* HERO & MAP PREVIEW */}
+            <div className="relative p-6 pb-2 overflow-hidden bg-white">
                 <div className="inline-flex items-center gap-2 bg-orange/10 text-orange-dark text-[10px] font-black tracking-widest uppercase px-5 py-2.5 rounded-full mb-3 border border-orange/10 backdrop-blur-sm z-10 relative">
                     <ShieldCheck size={12} fill="currentColor" />
                     Fast & Safe Rides
                 </div>
-                <div className="flex items-center justify-between gap-6 relative z-10">
-                    <div className="flex-1">
-                        <h1 className="font-heading text-5xl sm:text-6xl leading-[0.9] tracking-tight text-black mb-2.5">
-                            <span className="text-orange">Where</span><br />would you<br />like to<br /><span className="text-orange">go?</span>
+                
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                    <div className="flex-1 w-full">
+                        <h1 className="font-heading text-4xl sm:text-6xl leading-[0.9] tracking-tight text-black mb-2.5">
+                            <span className="text-orange">Where</span> to?
                         </h1>
-                        <p className="text-sm font-semibold text-[#555] leading-relaxed max-w-[280px]">
-                            Book your ride with a smooth, colorful & professional experience.
-                        </p>
-                    </div>
-                    <div className="flex-1 flex justify-end animate-bounce-slow">
-                        <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-[220px] h-[220px] rounded-full bg-radial-gradient from-orange/10 to-transparent -z-10" />
-                        <img src="/11.jpg" alt="Bike" className="w-full max-w-[420px] drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)]" />
+                        
+                        {/* MAP PREVIEW BOX */}
+                        <div className="w-full h-[200px] bg-grayBg rounded-3xl mt-4 overflow-hidden border border-black/5 relative shadow-inner">
+                            <MapTracking center={[17.3850, 78.4867]} zoom={12}>
+                                {pickupCoords && <Marker position={[pickupCoords.lat, pickupCoords.lng]} icon={pickupIcon} />}
+                                {dropCoords && <Marker position={[dropCoords.lat, dropCoords.lng]} icon={dropIcon} />}
+                                {pickupCoords && dropCoords && <RoutePolyline start={pickupCoords} end={dropCoords} />}
+                                <AutoCenter points={[pickupCoords ? [pickupCoords.lat, pickupCoords.lng] : null, dropCoords ? [dropCoords.lat, dropCoords.lng] : null].filter(Boolean)} />
+                            </MapTracking>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -141,16 +185,26 @@ const HomePage = () => {
                     Book <span className="text-orange">Your Ride</span>
                 </div>
 
-                <div className="flex items-center gap-3.5 px-5 py-4 bg-white rounded-2xl border border-black/5 mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-orange-light hover:shadow-md transition-all relative group">
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.15)] animate-pulse shrink-0" />
-                    <div className="absolute left-[27px] top-[36px] bottom-[-32px] w-[2px] bg-[repeating-linear-gradient(to_bottom,#ddd_0,#ddd_4px,transparent_4px,transparent_8px)] z-0" />
-                    <input 
-                        className="flex-1 border-none outline-none font-body text-[15px] font-bold text-black bg-transparent placeholder:text-[#bbb] placeholder:font-semibold" 
-                        type="text" 
-                        placeholder="Enter pickup location…" 
-                        value={pickup}
-                        onChange={(e) => setPickup(e.target.value)}
-                    />
+                <div className="relative mb-3">
+                    <div className="flex items-center gap-3.5 px-5 py-4 bg-white rounded-2xl border border-black/5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-orange-light hover:shadow-md transition-all relative group">
+                        <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.15)] animate-pulse shrink-0" />
+                        <input 
+                            className="flex-1 border-none outline-none font-body text-[15px] font-bold text-black bg-transparent placeholder:text-[#bbb] placeholder:font-semibold" 
+                            type="text" 
+                            placeholder="Enter pickup location…" 
+                            value={pickup}
+                            onChange={(e) => { setPickup(e.target.value); setPickupCoords(null); }}
+                        />
+                    </div>
+                    {pickupSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-[1000] bg-white border border-black/5 rounded-2xl mt-1 shadow-2xl overflow-hidden animate-slide-down">
+                            {pickupSuggestions.map((s, i) => (
+                                <div key={i} onClick={() => { setPickup(s.display_name); setPickupCoords(s); setPickupSuggestions([]); }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
+                                    {s.display_name}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end px-3.5 -my-4 relative z-10">
@@ -162,15 +216,26 @@ const HomePage = () => {
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3.5 px-5 py-4 bg-white rounded-2xl border border-black/5 mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-orange-light hover:shadow-md transition-all">
-                    <div className="w-3.5 h-3.5 rounded-full bg-orange shadow-[0_0_0_4px_rgba(240,90,0,0.15)] animate-pulse shrink-0" />
-                    <input 
-                        className="flex-1 border-none outline-none font-body text-[15px] font-bold text-black bg-transparent placeholder:text-[#bbb] placeholder:font-semibold" 
-                        type="text" 
-                        placeholder="Enter drop location…" 
-                        value={drop}
-                        onChange={(e) => setDrop(e.target.value)}
-                    />
+                <div className="relative mb-3">
+                    <div className="flex items-center gap-3.5 px-5 py-4 bg-white rounded-2xl border border-black/5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-orange-light hover:shadow-md transition-all">
+                        <div className="w-3.5 h-3.5 rounded-full bg-orange shadow-[0_0_0_4px_rgba(240,90,0,0.15)] animate-pulse shrink-0" />
+                        <input 
+                            className="flex-1 border-none outline-none font-body text-[15px] font-bold text-black bg-transparent placeholder:text-[#bbb] placeholder:font-semibold" 
+                            type="text" 
+                            placeholder="Enter drop location…" 
+                            value={drop}
+                            onChange={(e) => { setDrop(e.target.value); setDropCoords(null); }}
+                        />
+                    </div>
+                    {dropSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-[1000] bg-white border border-black/5 rounded-2xl mt-1 shadow-2xl overflow-hidden animate-slide-down">
+                            {dropSuggestions.map((s, i) => (
+                                <div key={i} onClick={() => { setDrop(s.display_name); setDropCoords(s); setDropSuggestions([]); }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
+                                    {s.display_name}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

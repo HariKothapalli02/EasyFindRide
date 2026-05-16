@@ -24,6 +24,22 @@ export const getRoute = async (start, end) => {
     }
 };
 
+export const searchLocations = async (query) => {
+    try {
+        if (!query || query.length < 3) return [];
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+        const response = await axios.get(url);
+        return response.data.map(item => ({
+            display_name: item.display_name,
+            lat: parseFloat(item.lat),
+            lng: parseFloat(item.lon)
+        }));
+    } catch (error) {
+        console.error('Search Error:', error);
+        return [];
+    }
+};
+
 export const geocode = async (address) => {
     try {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
