@@ -12,6 +12,7 @@ const DriverHome = () => {
     const [activeRide, setActiveRide] = useState(null);
     const [pendingRides, setPendingRides] = useState([]);
     const [online, setOnline] = useState(true);
+    const [city, setCity] = useState(localStorage.getItem('driverCity') || 'Detecting...');
 
     const fetchData = async () => {
         try {
@@ -34,6 +35,20 @@ const DriverHome = () => {
     };
 
     const { location } = useLiveLocation();
+
+    useEffect(() => {
+        const updateCity = async () => {
+            if (location && online) {
+                const cityName = await reverseGeocode(location.lat, location.lng);
+                if (cityName) {
+                    const normalizedCity = cityName.toLowerCase();
+                    setCity(normalizedCity);
+                    localStorage.setItem('driverCity', normalizedCity);
+                }
+            }
+        };
+        updateCity();
+    }, [location, online]);
 
 
     useEffect(() => {
@@ -148,6 +163,23 @@ const DriverHome = () => {
                     </button>
                 </div>
 
+                {/* Service Area Card */}
+                <div className="bg-white rounded-[32px] p-6 mb-8 border border-black/5 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-orange/10 rounded-2xl flex items-center justify-center text-orange">
+                            <MapPin size={24} />
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-[10px] font-black text-[#888] uppercase tracking-wider mb-1">Active Service Area (10km Radius)</div>
+                            <div className="font-heading text-2xl text-black capitalize">
+                                {city}
+                            </div>
+                        </div>
+                        <div className="bg-green-500/10 text-green-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            Live
+                        </div>
+                    </div>
+                </div>
 
                 {activeRide && (
                     <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden shadow-inner shrink-0 rounded-[32px] mb-8 border border-black/5">

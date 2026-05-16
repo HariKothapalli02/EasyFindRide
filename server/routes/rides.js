@@ -29,27 +29,43 @@ router.get('/pending', auth, async (req, res) => {
         // Get driver's current location
         const driverLoc = await DriverLocation.findOne({ driverId: req.user.id });
         
-        const query = { status: 'pending' };
-
-        // 1. Filter by Vehicle Type
-        if (driver.vehicleType) {
-            query.vehicleType = { $regex: new RegExp(`^${driver.vehicleType}$`, 'i') };
+        if (!driverLoc || !driverLoc.location) {
+            // If no driver location, return empty (as we can't calculate proximity)
+            return res.json([]);
         }
 
-        // 2. Filter by 10km Proximity if driver location is available
-        if (driverLoc && driverLoc.location) {
-            query.pickupLocation = {
-                $near: {
-                    $geometry: driverLoc.location,
-                    $maxDistance: 10000 // 10km in meters
+        const vehicleTypeRegex = driver.vehicleType ? new RegExp(`^${driver.vehicleType}$`, 'i') : /.*/;
+
+        // Use Aggregate with $geoNear for precise proximity filtering
+        const rides = await Booking.aggregate([
+            {
+                $geoNear: {
+                    near: driverLoc.location,
+                    distanceField: "distance",
+                    maxDistance: 10000, // 10km in meters
+                    query: { 
+                        status: 'pending',
+                        vehicleType: { $regex: vehicleTypeRegex }
+                    },
+                    spherical: true
                 }
-            };
-        }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'userId',
+                    foreignField: '_id',
+                    as: 'userId'
+                }
+            },
+            { $unwind: '$userId' },
+            { $project: { 'userId.password': 0 } },
+            { $sort: { date: -1 } }
+        ]);
 
-        const rides = await Booking.find(query).populate('userId', 'name phone').sort({ date: -1 });
         res.json(rides);
     } catch (err) {
-        console.error(err);
+        console.error('Pending Rides Error:', err);
         res.status(500).send('Server error');
     }
 });
@@ -137,7 +153,8 @@ router.post('/book', auth, async (req, res) => {
         });
 
         const fullBooking = await Booking.findById(booking._id).populate('userId', 'name phone');
-        console.log(`[PROXIMITY_DISPATCH] New Ride. Nearby drivers found: ${drivers.length}`);
+        console.log(`[PROXIMITY_DISPATCH] New Ride: ${standardizedCity} | Vehicle: ${standardizedVehicle}`);
+        console.log(`[PROXIMITY_DISPATCH] Nearby drivers found within 10km: ${drivers.length}`);
 
         drivers.forEach(driver => {
             const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
@@ -145,7 +162,7 @@ router.post('/book', auth, async (req, res) => {
             if (vehicleMatch) {
                 const socketId = userSockets.get(driver._id.toString());
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} (10km Radius)`);
+                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} (Proximity Match)`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
                 }
             }
