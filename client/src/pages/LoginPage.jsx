@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Github } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Github as GitHubIcon } from 'lucide-react';
 import api from '../utils/api';
 
 const LoginPage = () => {
@@ -109,7 +109,7 @@ const LoginPage = () => {
 
                     <div className="mt-6 flex gap-4">
                         <button className="flex-1 py-4 bg-grayBg rounded-2xl flex items-center justify-center gap-2 hover:bg-black/5 transition-all active:scale-95">
-                            <Github size={20} />
+                            <GitHubIcon size={20} />
                             <span className="font-bold text-sm">GitHub</span>
                         </button>
                         <button className="flex-1 py-4 bg-grayBg rounded-2xl flex items-center justify-center gap-2 hover:bg-black/5 transition-all active:scale-95">

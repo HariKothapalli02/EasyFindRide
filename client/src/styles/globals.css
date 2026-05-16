@@ -55,12 +55,21 @@ body {
 }
 
 @keyframes slide-up {
-  from { transform: translateY(100%); opacity: 0; }
+  from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
 .animate-slide-up {
-  animation: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes slide-down {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes fade-in {
@@ -69,5 +78,5 @@ body {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.3s ease-in forwards;
+  animation: fade-in 0.4s ease-out forwards;
 }
