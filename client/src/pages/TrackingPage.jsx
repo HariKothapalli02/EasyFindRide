@@ -110,9 +110,8 @@ const TrackingPage = () => {
                 </div>
             </div>
 
-            {/* FLOATING DRIVER CARD */}
-            <div className="relative z-30 px-6 pb-24 -mt-16">
-                <div className="bg-white rounded-[44px] p-8 shadow-[0_30px_70px_rgba(0,0,0,0.12)] border border-black/5 animate-slide-up">
+            {/* DRIVER INFO SECTION */}
+            <div className="bg-white rounded-t-[40px] p-8 mt-4 relative z-[2000] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] border-t border-black/5 animate-slide-up">
                     <div className="flex items-center gap-6 mb-8">
                         <div className="relative group">
                             <div className="w-20 h-20 bg-gradient-to-br from-orange to-orange-dark rounded-[28px] flex items-center justify-center text-white font-heading text-4xl shadow-lg shadow-orange/30 overflow-hidden ring-4 ring-orange/5">
