@@ -277,6 +277,26 @@ router.get('/vehicles', (req, res) => {
 });
 
 // Update Driver Location
+// Cancel Ride Search
+router.post('/cancel-search', auth, async (req, res) => {
+    try {
+        const { rideId } = req.body;
+        const booking = await Booking.findById(rideId);
+        if (!booking) return res.status(404).json({ msg: 'Ride not found' });
+        
+        if (booking.status === 'pending') {
+            booking.status = 'cancelled';
+            await booking.save();
+            res.json({ msg: 'Ride search cancelled successfully' });
+        } else {
+            res.status(400).json({ msg: 'Cannot cancel a ride that is already accepted or completed' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+});
+
 router.post('/location', auth, async (req, res) => {
     try {
         const { lat, lng, heading, speed, isOnline } = req.body;

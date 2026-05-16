@@ -41,6 +41,7 @@ const HomePage = () => {
     const [vehicles, setVehicles] = useState([]);
     const [showVehicles, setShowVehicles] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [currentRideId, setCurrentRideId] = useState(null);
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
@@ -104,7 +105,7 @@ const HomePage = () => {
             const token = localStorage.getItem('token');
             const bookingCity = city.trim() || 'Hyderabad';
             
-            await api.post('/rides/book', {
+            const res = await api.post('/rides/book', {
                 pickup,
                 pickupCoords,
                 drop,
@@ -115,11 +116,29 @@ const HomePage = () => {
             }, {
                 headers: { 'x-auth-token': token }
             });
+            
+            if (res.data && res.data._id) {
+                setCurrentRideId(res.data._id);
+            }
+
             setShowVehicles(false);
             setIsSearching(true);
         } catch (err) {
             console.error(err);
             alert('Error booking ride');
+        }
+    };
+
+    const cancelSearch = async () => {
+        try {
+            if (currentRideId) {
+                await api.post('/rides/cancel-search', { rideId: currentRideId });
+            }
+            setIsSearching(false);
+            setCurrentRideId(null);
+        } catch (err) {
+            console.error('Error cancelling search:', err);
+            setIsSearching(false);
         }
     };
 
@@ -143,7 +162,7 @@ const HomePage = () => {
                             Finding the nearest driver for your <span className="text-black">Bike</span> ride...
                         </p>
                         <button 
-                            onClick={() => setIsSearching(false)}
+                            onClick={cancelSearch}
                             className="w-full py-4 bg-grayBg text-[#888] font-heading text-xl rounded-2xl hover:bg-black hover:text-white transition-all"
                         >
                             Cancel Search
