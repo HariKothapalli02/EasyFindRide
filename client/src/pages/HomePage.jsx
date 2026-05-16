@@ -214,7 +214,16 @@ const HomePage = () => {
                     {pickupSuggestions.length > 0 && (
                         <div className="absolute top-full left-0 right-0 z-[1000] bg-white border border-black/5 rounded-2xl mt-1 shadow-2xl overflow-hidden animate-slide-down">
                             {pickupSuggestions.map((s, i) => (
-                                <div key={i} onClick={() => { setPickup(s.display_name); setPickupCoords(s); setPickupSuggestions([]); }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
+                                <div key={i} onClick={() => { 
+                                    setPickup(s.display_name); 
+                                    setPickupCoords(s); 
+                                    setPickupSuggestions([]);
+                                    // Extract city/town from display_name (usually the second or third part)
+                                    const parts = s.display_name.split(',');
+                                    if (parts.length > 0) {
+                                        setCity(parts[0].trim());
+                                    }
+                                }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
                                     {s.display_name}
                                 </div>
                             ))}
