@@ -42,6 +42,7 @@ const HomePage = () => {
     const [showVehicles, setShowVehicles] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [currentRideId, setCurrentRideId] = useState(null);
+    const [distance, setDistance] = useState(0);
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
@@ -95,16 +96,27 @@ const HomePage = () => {
     }, [drop, dropCoords]);
 
     const getVehicles = async () => {
-        if (!pickup || !drop) {
-            alert('Please enter both pickup and drop locations.');
+        if (!pickupCoords || !dropCoords) {
+            alert('Please select both pickup and drop locations from the list');
             return;
         }
         try {
-            const res = await api.get(`/rides/vehicles?pickup=${pickup}&drop=${drop}`);
+            // Get real distance from OSRM
+            const routeData = await getRoute(pickupCoords, dropCoords);
+            if (!routeData) {
+                alert('Could not calculate route between these locations.');
+                return;
+            }
+            
+            const dist = parseFloat(routeData.distance);
+            setDistance(dist);
+
+            const res = await api.get(`/rides/vehicles?distance=${dist}`);
             setVehicles(res.data);
             setShowVehicles(true);
         } catch (err) {
             console.error(err);
+            alert('Error calculating price. Please try again.');
         }
     };
 
@@ -411,7 +423,10 @@ const HomePage = () => {
                         <div className="flex justify-between items-end mb-8">
                             <div>
                                 <h3 className="font-heading text-4xl leading-none">Select <span className="text-orange">Your Ride</span></h3>
-                                <p className="text-[11px] font-black text-[#888] uppercase tracking-[2px] mt-2">Available near you</p>
+                                <p className="text-[11px] font-black text-[#888] uppercase tracking-[2px] mt-2 flex items-center gap-2">
+                                    <Navigation size={12} className="text-orange" />
+                                    Distance: <span className="text-black">{distance} km</span>
+                                </p>
                             </div>
                             <button onClick={() => setShowVehicles(false)} className="bg-grayBg hover:bg-black hover:text-white transition-all w-10 h-10 rounded-2xl flex items-center justify-center text-[#888]">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>

@@ -276,15 +276,18 @@ router.post('/complete', auth, async (req, res) => {
     }
 });
 
-// Mock vehicles and prices logic
+// Get vehicles and prices based on distance
 router.get('/vehicles', (req, res) => {
-    const { pickup, drop } = req.query;
-    if (!pickup || !drop) return res.status(400).json({ msg: 'Pickup and drop are required' });
+    const { distance } = req.query; // distance in km
+    if (!distance) return res.status(400).json({ msg: 'Distance is required' });
     
+    const dist = parseFloat(distance);
+    
+    // Rates per km: Bike 5, Auto 10, Car 25
     const vehicles = [
-        { type: 'Bike', price: 40, icon: 'Bike' },
-        { type: 'Auto', price: 80, icon: 'Car' },
-        { type: 'Car', price: 150, icon: 'Car' }
+        { type: 'Bike', price: Math.round(dist * 5), icon: 'Bike' },
+        { type: 'Auto', price: Math.round(dist * 10), icon: 'Car' },
+        { type: 'Car', price: Math.round(dist * 25), icon: 'Car' }
     ];
     res.json(vehicles);
 });
