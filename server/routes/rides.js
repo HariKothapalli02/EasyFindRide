@@ -6,6 +6,19 @@ const Booking = require('../models/Booking');
 const User = require('../models/User');
 const DriverLocation = require('../models/DriverLocation');
 
+// Middleware to verify JWT
+const auth = (req, res, next) => {
+    const token = req.header('x-auth-token');
+    if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded.user;
+        next();
+    } catch (err) {
+        res.status(401).json({ msg: 'Token is not valid' });
+    }
+};
+
 // Get driver earnings (Day, Week, Month)
 router.get('/earnings', auth, async (req, res) => {
     try {
@@ -48,19 +61,6 @@ router.get('/earnings', auth, async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-
-// Middleware to verify JWT
-const auth = (req, res, next) => {
-    const token = req.header('x-auth-token');
-    if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded.user;
-        next();
-    } catch (err) {
-        res.status(401).json({ msg: 'Token is not valid' });
-    }
-};
 
 // Get pending rides for driver's city
 router.get('/pending', auth, async (req, res) => {
