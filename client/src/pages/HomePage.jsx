@@ -585,27 +585,6 @@ const HomePage = () => {
 
             {/* FIXED BOTTOM STATUS BARS (ABOVE NAV) */}
             <div className="fixed bottom-24 left-5 right-5 z-[5000] flex flex-col gap-3 pointer-events-none">
-                {/* Active Ride Banner */}
-                {currentRideId && !isSearching && (
-                    <div 
-                        onClick={() => navigate('/tracking')}
-                        className="pointer-events-auto bg-black text-white p-6 rounded-[32px] flex items-center justify-between cursor-pointer hover:bg-orange transition-all group shadow-2xl shadow-black/20 animate-slide-up"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                                <Navigation size={24} className="animate-pulse" />
-                            </div>
-                            <div>
-                                <div className="font-heading text-xl leading-none mb-1 text-white">Ride in Progress</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-white/50 group-hover:text-white/80">Tap to track live</div>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                            <ArrowRight size={20} />
-                        </div>
-                    </div>
-                )}
-
                 {/* Searching Status Banner */}
                 {isSearching && !showSearchModal && (
                     <div 
