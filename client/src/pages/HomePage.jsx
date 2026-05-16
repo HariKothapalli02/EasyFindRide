@@ -98,22 +98,24 @@ const HomePage = () => {
                 try {
                     const res = await api.get('/rides/active');
                     
-                    // If no active ride is found, clear all states
+                    // Only clear if we explicitly don't have a ride AND we aren't in a state where one is expected
                     if (!res.data) {
-                        setIsSearching(false);
-                        setShowSearchModal(false);
-                        setCurrentRideId(null);
+                        // If we were expecting a ride but it's gone, clear everything
+                        if (!isSearching) {
+                            setCurrentRideId(null);
+                        }
                         return;
                     }
 
                     const status = res.data.status;
 
                     // If searching and accepted/picked-up, go to tracking
-                    if (isSearching && (status === 'accepted' || status === 'picked-up')) {
-                        console.log('Polling found accepted ride!');
+                    if (isSearching && (status === 'accepted' || status === 'picked-up' || status === 'ongoing')) {
+                        console.log('Polling found accepted/active ride!');
                         setIsSearching(false);
                         setShowSearchModal(false);
                         navigate('/tracking', { state: { booking: res.data } });
+                        return;
                     }
 
                     // If ride is completed or cancelled, clear states
@@ -238,6 +240,7 @@ const HomePage = () => {
                 setCurrentRideId(res.data._id);
             }
 
+            setSearchTimeLeft(180); // Reset timer for new search
             setShowVehicles(false);
             setIsSearching(true);
             setShowSearchModal(true);

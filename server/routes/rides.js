@@ -151,14 +151,14 @@ router.post('/book', auth, async (req, res) => {
             const driverCity = (driver.city || '').toLowerCase().trim();
             const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
             
-            // Flexible city matching: Check if names overlap or are found in the full address
             const cityMatch = 
                 driverCity === standardizedCity || 
                 driverCity.includes(standardizedCity) || 
                 standardizedCity.includes(driverCity) ||
                 fullBooking.pickup.toLowerCase().includes(driverCity);
 
-            console.log(`[DISPATCH] Comparing Driver ${driver.name} (City: ${driverCity}) with Booking (City: ${standardizedCity}). Match: ${cityMatch}`);
+            console.log(`[DISPATCH] 🔍 Checking Driver: ${driver.name} | Vehicle: ${driver.vehicleType} | City: ${driverCity}`);
+            console.log(`[DISPATCH]    Match Results -> Vehicle: ${vehicleMatch}, City: ${cityMatch}`);
 
             if (vehicleMatch && cityMatch) {
                 const socketId = userSockets.get(driver._id.toString());
