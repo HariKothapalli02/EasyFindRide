@@ -71,9 +71,15 @@ const DriverHome = () => {
         socket.on('connect', joinRoom);
 
         socket.on('new_ride_request', (ride) => {
-            const rideCity = ride.city.toLowerCase().trim();
-            const driverCity = city.toLowerCase().trim();
-            if (online && !activeRide && (rideCity.includes(driverCity) || driverCity.includes(rideCity))) {
+            const rideCity = (ride.city || '').toLowerCase().trim();
+            const dCity = (city || '').toLowerCase().trim();
+            const isMatch = 
+                rideCity.includes(dCity) || 
+                dCity.includes(rideCity) || 
+                ride.pickup.toLowerCase().includes(dCity) ||
+                ride.pickup.toLowerCase().includes(rideCity);
+
+            if (online && !activeRide && isMatch) {
                 setPendingRides(prev => [ride, ...prev.filter(r => r._id !== ride._id)]);
             }
         });

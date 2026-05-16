@@ -105,27 +105,32 @@ router.post('/book', auth, async (req, res) => {
         drivers.forEach(driver => {
             // Check vehicle match AND city match manually
             const driverCity = (driver.city || '').toLowerCase().trim();
-            const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
+            const driverVehicle = (driver.vehicleType || '').toLowerCase().trim();
             
-            // Flexible city matching: Check if names overlap or are found in the full address
+            // Standardize vehicle types for comparison
+            const vehicleMatch = driverVehicle === standardizedVehicle;
+            
+            // Flexible city matching: 
             const cityMatch = 
                 driverCity === standardizedCity || 
                 driverCity.includes(standardizedCity) || 
                 standardizedCity.includes(driverCity) ||
-                fullBooking.pickup.toLowerCase().includes(driverCity);
+                fullBooking.pickup.toLowerCase().includes(driverCity) ||
+                fullBooking.pickup.toLowerCase().includes(standardizedCity);
 
-            console.log(`[DISPATCH] Comparing Driver ${driver.name} (City: ${driverCity}) with Booking (City: ${standardizedCity}). Match: ${cityMatch}`);
+            console.log(`[DISPATCH] Evaluating Driver: ${driver.name} | DriverCity: "${driverCity}" | RideCity: "${standardizedCity}" | DriverVehicle: "${driverVehicle}" | RideVehicle: "${standardizedVehicle}"`);
+            console.log(`[DISPATCH] Result -> CityMatch: ${cityMatch} | VehicleMatch: ${vehicleMatch}`);
 
-            if (vehicleMatch && cityMatch) {
+            if (cityMatch && vehicleMatch) {
                 const socketId = userSockets.get(driver._id.toString());
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} in ${driverCity} (Socket: ${socketId})`);
+                    console.log(`[DISPATCH] ✅ SIGNAL SENT -> ${driver.name} (Socket: ${socketId})`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
                 } else {
-                    console.log(`[DISPATCH] ❌ Driver ${driver.name} is offline (No Socket)`);
+                    console.log(`[DISPATCH] ❌ OFFLINE -> ${driver.name} (No active socket connection)`);
                 }
             } else {
-                if (vehicleMatch) console.log(`[DISPATCH] ⏭️ Driver ${driver.name} is in ${driverCity}, but ride is in ${standardizedCity}. Skipping.`);
+                console.log(`[DISPATCH] ⏭️ SKIPPED -> ${driver.name} (Match conditions not met)`);
             }
         });
 
