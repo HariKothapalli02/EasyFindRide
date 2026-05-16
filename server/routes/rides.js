@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Booking = require('../models/Booking');
@@ -18,49 +17,6 @@ const auth = (req, res, next) => {
         res.status(401).json({ msg: 'Token is not valid' });
     }
 };
-
-// Get driver earnings (Day, Week, Month)
-router.get('/earnings', auth, async (req, res) => {
-    try {
-        const driverId = req.user.id;
-        const now = new Date();
-        
-        // Start of Day
-        const startOfDay = new Date(now.setHours(0,0,0,0));
-        
-        // Start of Week (Sunday)
-        const day = now.getDay();
-        const startOfWeek = new Date(new Date(now).setDate(now.getDate() - day));
-        startOfWeek.setHours(0,0,0,0);
-
-        // Start of Month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        const earnings = await Booking.aggregate([
-            { $match: { driverId: new mongoose.Types.ObjectId(driverId), status: 'completed' } },
-            {
-                $group: {
-                    _id: null,
-                    today: {
-                        $sum: { $cond: [{ $gte: ['$date', startOfDay] }, '$price', 0] }
-                    },
-                    week: {
-                        $sum: { $cond: [{ $gte: ['$date', startOfWeek] }, '$price', 0] }
-                    },
-                    month: {
-                        $sum: { $cond: [{ $gte: ['$date', startOfMonth] }, '$price', 0] }
-                    }
-                }
-            }
-        ]);
-
-        const defaultEarnings = { today: 0, week: 0, month: 0 };
-        res.json(earnings[0] || defaultEarnings);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
-    }
-});
 
 // Get pending rides for driver's city
 router.get('/pending', auth, async (req, res) => {
@@ -87,7 +43,7 @@ router.get('/active', auth, async (req, res) => {
                 { userId: req.user.id },
                 { driverId: req.user.id }
             ],
-            status: { $in: ['pending', 'accepted', 'picked-up'] } 
+            status: { $in: ['accepted', 'picked-up'] } 
         })
         .populate('driverId', 'name phone profilePhoto vehicleNumber vehicleType')
         .populate('userId', 'name phone');
@@ -151,14 +107,14 @@ router.post('/book', auth, async (req, res) => {
             const driverCity = (driver.city || '').toLowerCase().trim();
             const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
             
+            // Flexible city matching: Check if names overlap or are found in the full address
             const cityMatch = 
                 driverCity === standardizedCity || 
                 driverCity.includes(standardizedCity) || 
                 standardizedCity.includes(driverCity) ||
                 fullBooking.pickup.toLowerCase().includes(driverCity);
 
-            console.log(`[DISPATCH] 🔍 Checking Driver: ${driver.name} | Vehicle: ${driver.vehicleType} | City: ${driverCity}`);
-            console.log(`[DISPATCH]    Match Results -> Vehicle: ${vehicleMatch}, City: ${cityMatch}`);
+            console.log(`[DISPATCH] Comparing Driver ${driver.name} (City: ${driverCity}) with Booking (City: ${standardizedCity}). Match: ${cityMatch}`);
 
             if (vehicleMatch && cityMatch) {
                 const socketId = userSockets.get(driver._id.toString());

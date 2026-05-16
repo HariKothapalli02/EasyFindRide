@@ -6,7 +6,6 @@ import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import BookingsPage from './pages/BookingsPage';
 import SupportPage from './pages/SupportPage';
-import WalletPage from './pages/WalletPage';
 import TrackingPage from './pages/TrackingPage';
 import FloatingTracker from './components/FloatingTracker';
 import GlobalRequestPopup from './components/GlobalRequestPopup';
@@ -30,7 +29,6 @@ function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
-          <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/tracking" element={<ProtectedRoute><TrackingPage /></ProtectedRoute>} />
         </Routes>
       </div>
