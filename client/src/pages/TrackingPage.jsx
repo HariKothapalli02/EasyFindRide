@@ -93,7 +93,7 @@ const TrackingPage = () => {
     const isPickedUp = booking.status === 'picked-up';
 
     return (
-        <div className="bg-grayBg min-h-screen animate-fade-in overflow-hidden flex flex-col">
+        <div className="bg-grayBg min-h-screen animate-fade-in overflow-hidden flex flex-col pb-28">
             <Navbar />
             
             {/* MAP SECTION */}
@@ -192,11 +192,9 @@ const TrackingPage = () => {
                         </div>
                     )}
                 </div>
-
-                <div className="fixed bottom-0 left-0 right-0 z-[100]">
-                    <BottomNav />
-                </div>
-            </div>
+            
+            <BottomNav />
+        </div>
         );
 };
 
