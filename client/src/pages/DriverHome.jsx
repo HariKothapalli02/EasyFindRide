@@ -152,20 +152,6 @@ const DriverHome = () => {
             <Navbar />
             <DriverLiveTracker rideId={activeRide?._id} isOnline={online} />
             
-            {activeRide && (
-                <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden shadow-inner shrink-0">
-                    <DriverRideMap ride={activeRide} />
-                    <div className="absolute top-4 left-4 z-[1000]">
-                        <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-white shadow-xl flex items-center gap-2">
-                            <div className="w-2 h-2 bg-orange rounded-full animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-black">
-                                {activeRide.status === 'accepted' ? 'Route to Pickup' : 'Route to Drop'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             <div className="max-w-[500px] mx-auto w-full px-5 pt-8">
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -197,6 +183,20 @@ const DriverHome = () => {
                         </div>
                     </div>
                 </div>
+
+                {activeRide && (
+                    <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden shadow-inner shrink-0 rounded-[32px] mb-8 border border-black/5">
+                        <DriverRideMap ride={activeRide} />
+                        <div className="absolute top-4 left-4 z-[1000]">
+                            <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-white shadow-xl flex items-center gap-2">
+                                <div className="w-2 h-2 bg-orange rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-black">
+                                    {activeRide.status === 'accepted' ? 'Route to Pickup' : 'Route to Drop'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {activeRide ? (
                     <div className="space-y-6 animate-fade-in">
