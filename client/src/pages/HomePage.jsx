@@ -46,12 +46,20 @@ const HomePage = () => {
     useEffect(() => {
         const userId = localStorage.getItem('userId');
         const joinRoom = () => {
-            if (userId) socket.emit('join', userId);
+            if (userId) {
+                console.log('Emitting join for User:', userId);
+                socket.emit('join', userId);
+            }
         };
-        joinRoom();
+        
+        if (socket.connected) {
+            joinRoom();
+        }
+
         socket.on('connect', joinRoom);
 
         socket.on('ride_accepted', (booking) => {
+            console.log('Ride Accepted Event Received!', booking);
             setIsSearching(false);
             navigate('/tracking', { state: { booking } });
         });

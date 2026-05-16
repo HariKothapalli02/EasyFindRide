@@ -174,7 +174,7 @@ router.post('/accept', auth, async (req, res) => {
         await booking.save();
 
         const driver = await User.findById(req.user.id).select('-password');
-        const updatedBooking = await Booking.findById(rideId)
+        const updatedBooking = await Booking.findById(booking._id)
             .populate('driverId', 'name phone profilePhoto vehicleNumber vehicleType')
             .populate('userId', 'name phone');
 
@@ -184,8 +184,13 @@ router.post('/accept', auth, async (req, res) => {
         const customerId = updatedBooking.userId._id || updatedBooking.userId;
         const customerSocketId = userSockets.get(customerId.toString());
         
+        console.log(`[ACCEPT] Notification Attempt: Customer ${customerId.toString()} | Socket Found: ${!!customerSocketId}`);
+
         if (customerSocketId) {
+            console.log(`[ACCEPT] ✅ Emitting ride_accepted to Socket: ${customerSocketId}`);
             io.to(customerSocketId).emit('ride_accepted', updatedBooking);
+        } else {
+            console.log(`[ACCEPT] ❌ Socket not found for Customer ${customerId.toString()}. Sockets available: ${Array.from(userSockets.keys())}`);
         }
 
         res.json(updatedBooking);
