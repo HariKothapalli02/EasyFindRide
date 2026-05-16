@@ -52,6 +52,19 @@ const HomePage = () => {
                 socket.emit('join', userId);
             }
         };
+
+        const checkActiveRide = async () => {
+            try {
+                const res = await api.get('/rides/active');
+                if (res.data && res.data.status === 'accepted' || res.data?.status === 'picked-up') {
+                    navigate('/tracking', { state: { booking: res.data } });
+                }
+            } catch (err) {
+                console.error('Error checking active ride:', err);
+            }
+        };
+        
+        checkActiveRide();
         
         if (socket.connected) {
             joinRoom();
@@ -70,6 +83,27 @@ const HomePage = () => {
             socket.off('connect');
         };
     }, [navigate]);
+
+    // POLLING WHILE SEARCHING
+    useEffect(() => {
+        let interval;
+        if (isSearching && currentRideId) {
+            interval = setInterval(async () => {
+                try {
+                    const res = await api.get('/rides/active');
+                    if (res.data && (res.data.status === 'accepted' || res.data.status === 'picked-up')) {
+                        console.log('Polling found accepted ride!');
+                        setIsSearching(false);
+                        clearInterval(interval);
+                        navigate('/tracking', { state: { booking: res.data } });
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                }
+            }, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [isSearching, currentRideId, navigate]);
 
     useEffect(() => {
         const timer = setTimeout(async () => {
