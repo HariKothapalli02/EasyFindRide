@@ -12,7 +12,6 @@ const DriverHome = () => {
     const [activeRide, setActiveRide] = useState(null);
     const [pendingRides, setPendingRides] = useState([]);
     const [online, setOnline] = useState(true);
-    const [city, setCity] = useState(localStorage.getItem('driverCity') || 'eluru');
 
     const fetchData = async () => {
         try {
@@ -26,7 +25,7 @@ const DriverHome = () => {
                 setPendingRides([]); 
             } else {
                 setActiveRide(null);
-                const pendingRes = await api.get(`/rides/pending?city=${city}`);
+                const pendingRes = await api.get('/rides/pending');
                 setPendingRides(pendingRes.data);
             }
         } catch (err) {
@@ -36,24 +35,6 @@ const DriverHome = () => {
 
     const { location } = useLiveLocation();
 
-    useEffect(() => {
-        const updateCity = async () => {
-            // Only auto-detect city if it hasn't been set yet or if it's still at default
-            const isInitial = !localStorage.getItem('driverCity');
-            if (location && online && isInitial) {
-                const cityName = await reverseGeocode(location.lat, location.lng);
-                if (cityName) {
-                    const normalizedCity = cityName.toLowerCase();
-                    setCity(normalizedCity);
-                    localStorage.setItem('driverCity', normalizedCity);
-                    
-                    // Sync city with backend for dispatch matching
-                    api.post('/auth/update-city', { city: normalizedCity }).catch(e => console.error(e));
-                }
-            }
-        };
-        updateCity();
-    }, [location, online]);
 
     useEffect(() => {
         fetchData();
@@ -64,7 +45,7 @@ const DriverHome = () => {
             clearInterval(interval);
             window.removeEventListener('refresh_driver_ride', fetchData);
         };
-    }, [city]);
+    }, []);
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
@@ -167,23 +148,6 @@ const DriverHome = () => {
                     </button>
                 </div>
 
-                {/* Service Area Card */}
-                <div className="bg-white rounded-[32px] p-6 mb-8 border border-black/5 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange/10 rounded-2xl flex items-center justify-center text-orange">
-                            <MapPin size={24} />
-                        </div>
-                        <div className="flex-1">
-                            <div className="text-[10px] font-black text-[#888] uppercase tracking-wider mb-1">Service Area</div>
-                            <input 
-                                type="text"
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                className="font-heading text-2xl bg-transparent border-none p-0 focus:ring-0 w-full lowercase outline-none"
-                            />
-                        </div>
-                    </div>
-                </div>
 
                 {activeRide && (
                     <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden shadow-inner shrink-0 rounded-[32px] mb-8 border border-black/5">
