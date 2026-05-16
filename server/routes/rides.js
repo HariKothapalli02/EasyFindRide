@@ -18,10 +18,9 @@ const auth = (req, res, next) => {
     }
 };
 
-// Get pending rides for driver (City + Vehicle matching)
+// Get pending rides for driver (Vehicle matching only)
 router.get('/pending', auth, async (req, res) => {
     try {
-        const { city } = req.query;
         const driver = await User.findById(req.user.id);
         
         if (!driver || driver.role !== 'driver') {
@@ -30,18 +29,9 @@ router.get('/pending', auth, async (req, res) => {
 
         const query = { status: 'pending' };
 
-        // 1. Filter by Vehicle Type (Case Insensitive)
+        // Filter by Vehicle Type (Case Insensitive)
         if (driver.vehicleType) {
             query.vehicleType = { $regex: new RegExp(`^${driver.vehicleType}$`, 'i') };
-        }
-
-        // 2. Filter by City (Flexible)
-        if (city) {
-            const normalizedCity = city.toLowerCase().trim();
-            query.$or = [
-                { city: { $regex: normalizedCity, $options: 'i' } },
-                { pickup: { $regex: normalizedCity, $options: 'i' } }
-            ];
         }
 
         const rides = await Booking.find(query).populate('userId', 'name phone').sort({ date: -1 });
@@ -120,29 +110,21 @@ router.post('/book', auth, async (req, res) => {
         console.log(`[DISPATCH] Checking ${drivers.length} online drivers...`);
 
         drivers.forEach(driver => {
-            // Check vehicle match AND city match manually
-            const driverCity = (driver.city || '').toLowerCase().trim();
+            // Check vehicle match (Case Insensitive)
             const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
             
-            // Flexible city matching: Check if names overlap or are found in the full address
-            const cityMatch = 
-                driverCity === standardizedCity || 
-                driverCity.includes(standardizedCity) || 
-                standardizedCity.includes(driverCity) ||
-                fullBooking.pickup.toLowerCase().includes(driverCity);
+            console.log(`[DISPATCH] Checking Driver ${driver.name} (Vehicle: ${driver.vehicleType}) for Ride (Vehicle: ${standardizedVehicle})`);
 
-            console.log(`[DISPATCH] Comparing Driver ${driver.name} (City: ${driverCity}) with Booking (City: ${standardizedCity}). Match: ${cityMatch}`);
-
-            if (vehicleMatch && cityMatch) {
+            if (vehicleMatch) {
                 const socketId = userSockets.get(driver._id.toString());
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} in ${driverCity} (Socket: ${socketId})`);
+                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} (Socket: ${socketId})`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
                 } else {
                     console.log(`[DISPATCH] ❌ Driver ${driver.name} is offline (No Socket)`);
                 }
             } else {
-                if (vehicleMatch) console.log(`[DISPATCH] ⏭️ Driver ${driver.name} is in ${driverCity}, but ride is in ${standardizedCity}. Skipping.`);
+                console.log(`[DISPATCH] ⏭️ Driver ${driver.name} has ${driver.vehicleType}, but ride is ${standardizedVehicle}. Skipping.`);
             }
         });
 
