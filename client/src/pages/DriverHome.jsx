@@ -85,7 +85,7 @@ const DriverHome = () => {
             socket.off('ride_completed');
             socket.off('connect');
         };
-    }, [online, city, activeRide]);
+    }, [online, activeRide]);
 
     const markAsPickedUp = async () => {
         try {
