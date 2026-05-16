@@ -1,9 +1,53 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const DriverLocation = require('../models/DriverLocation');
+
+// Get driver earnings (Day, Week, Month)
+router.get('/earnings', auth, async (req, res) => {
+    try {
+        const driverId = req.user.id;
+        const now = new Date();
+        
+        // Start of Day
+        const startOfDay = new Date(now.setHours(0,0,0,0));
+        
+        // Start of Week (Sunday)
+        const day = now.getDay();
+        const startOfWeek = new Date(new Date(now).setDate(now.getDate() - day));
+        startOfWeek.setHours(0,0,0,0);
+
+        // Start of Month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const earnings = await Booking.aggregate([
+            { $match: { driverId: new mongoose.Types.ObjectId(driverId), status: 'completed' } },
+            {
+                $group: {
+                    _id: null,
+                    today: {
+                        $sum: { $cond: [{ $gte: ['$date', startOfDay] }, '$price', 0] }
+                    },
+                    week: {
+                        $sum: { $cond: [{ $gte: ['$date', startOfWeek] }, '$price', 0] }
+                    },
+                    month: {
+                        $sum: { $cond: [{ $gte: ['$date', startOfMonth] }, '$price', 0] }
+                    }
+                }
+            }
+        ]);
+
+        const defaultEarnings = { today: 0, week: 0, month: 0 };
+        res.json(earnings[0] || defaultEarnings);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+});
 
 // Middleware to verify JWT
 const auth = (req, res, next) => {
