@@ -22,7 +22,6 @@ function App() {
     <Router>
       <div className="app-wrapper">
         <FloatingTracker />
-        <GlobalRequestPopup />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
