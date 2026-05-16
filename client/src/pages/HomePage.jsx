@@ -42,6 +42,8 @@ const HomePage = () => {
     const [vehicles, setVehicles] = useState([]);
     const [showVehicles, setShowVehicles] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
+    const [showSearchModal, setShowSearchModal] = useState(false);
+    const [searchTimeLeft, setSearchTimeLeft] = useState(180); // 3 minutes in seconds
     const [currentRideId, setCurrentRideId] = useState(null);
     const [distance, setDistance] = useState(0);
 
@@ -98,6 +100,7 @@ const HomePage = () => {
                     if (res.data && (res.data.status === 'accepted' || res.data.status === 'picked-up')) {
                         console.log('Polling found accepted ride!');
                         setIsSearching(false);
+                        setShowSearchModal(false);
                         clearInterval(interval);
                         navigate('/tracking', { state: { booking: res.data } });
                     }
@@ -108,6 +111,26 @@ const HomePage = () => {
         }
         return () => clearInterval(interval);
     }, [isSearching, currentRideId, navigate]);
+
+    // SEARCH TIMEOUT TIMER (3 MINUTES)
+    useEffect(() => {
+        let timer;
+        if (isSearching) {
+            setSearchTimeLeft(180);
+            timer = setInterval(() => {
+                setSearchTimeLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        cancelSearch();
+                        alert('No driver accepted your ride in time. Please try again.');
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(timer);
+    }, [isSearching]);
 
     useEffect(() => {
         const timer = setTimeout(async () => {
@@ -199,6 +222,7 @@ const HomePage = () => {
 
             setShowVehicles(false);
             setIsSearching(true);
+            setShowSearchModal(true);
         } catch (err) {
             console.error(err);
             alert('Error booking ride');
@@ -211,6 +235,7 @@ const HomePage = () => {
                 await api.post('/rides/cancel-search', { rideId: currentRideId });
             }
             setIsSearching(false);
+            setShowSearchModal(false);
             setCurrentRideId(null);
         } catch (err) {
             console.error('Error cancelling search:', err);
@@ -222,10 +247,17 @@ const HomePage = () => {
         <div className="pb-32 bg-[#fdfdfd] animate-fade-in">
             <Navbar />
             
-            {/* SEARCHING LOADER */}
-            {isSearching && (
+            {/* SEARCHING LOADER MODAL */}
+            {isSearching && showSearchModal && (
                 <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-md p-6">
-                    <div className="w-full max-w-[360px] bg-white rounded-[40px] p-10 text-center shadow-2xl animate-slide-up">
+                    <div className="w-full max-w-[360px] bg-white rounded-[40px] p-10 text-center shadow-2xl animate-slide-up relative">
+                        <button 
+                            onClick={() => setShowSearchModal(false)}
+                            className="absolute top-6 right-6 w-10 h-10 bg-grayBg rounded-full flex items-center justify-center text-[#888] hover:bg-black hover:text-white transition-all"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+
                         <div className="relative w-32 h-32 mx-auto mb-8">
                             <div className="absolute inset-0 border-4 border-orange/10 rounded-full" />
                             <div className="absolute inset-0 border-t-4 border-orange rounded-full animate-spin" />
@@ -234,9 +266,17 @@ const HomePage = () => {
                             </div>
                         </div>
                         <h3 className="font-heading text-4xl mb-3">Searching <span className="text-orange">Rides</span></h3>
-                        <p className="text-[#888] font-bold text-sm leading-relaxed mb-8">
-                            Finding the nearest driver for your <span className="text-black">Bike</span> ride...
+                        <p className="text-[#888] font-bold text-sm leading-relaxed mb-4">
+                            Finding the nearest driver for your ride...
                         </p>
+                        
+                        <div className="mb-8 py-3 bg-orange/5 rounded-2xl">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-[#888] mb-1">Search Timeout</div>
+                            <div className="font-heading text-2xl text-orange">
+                                {Math.floor(searchTimeLeft / 60)}:{(searchTimeLeft % 60).toString().padStart(2, '0')}
+                            </div>
+                        </div>
+
                         <button 
                             onClick={cancelSearch}
                             className="w-full py-4 bg-grayBg text-[#888] font-heading text-xl rounded-2xl hover:bg-black hover:text-white transition-all"
@@ -269,6 +309,29 @@ const HomePage = () => {
                             </div>
                         </div>
                         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                            <ArrowRight size={20} />
+                        </div>
+                    </div>
+                )}
+
+                {/* Searching Status Banner */}
+                {isSearching && !showSearchModal && (
+                    <div 
+                        onClick={() => setShowSearchModal(true)}
+                        className="bg-orange text-white p-6 rounded-[32px] mb-8 flex items-center justify-between cursor-pointer hover:bg-black transition-all group shadow-xl shadow-orange/20 animate-pulse"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                                <Loader2 size={24} className="animate-spin" />
+                            </div>
+                            <div>
+                                <div className="font-heading text-xl leading-none mb-1 text-white">Searching for Ride</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-white/50 group-hover:text-white/80">
+                                    Time Left: {Math.floor(searchTimeLeft / 60)}:{(searchTimeLeft % 60).toString().padStart(2, '0')}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                             <ArrowRight size={20} />
                         </div>
                     </div>
