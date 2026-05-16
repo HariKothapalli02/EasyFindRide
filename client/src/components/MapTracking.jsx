@@ -44,18 +44,20 @@ export const driverIcon = L.divIcon({
 
 const MapTracking = ({ center = [17.3850, 78.4867], zoom = 13, children, style }) => {
     return (
-        <MapContainer 
-            center={center} 
-            zoom={zoom} 
-            style={{ height: '100%', width: '100%', ...style }}
-            zoomControl={false}
-        >
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            {children}
-        </MapContainer>
+        <div style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}>
+            <MapContainer 
+                center={center} 
+                zoom={zoom} 
+                style={{ height: '100%', width: '100%', ...style }}
+                zoomControl={false}
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                {children}
+            </MapContainer>
+        </div>
     );
 };
 

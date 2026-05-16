@@ -3,7 +3,7 @@ import { Marker, useMap } from 'react-leaflet';
 import MapTracking, { pickupIcon, dropIcon, driverIcon } from './MapTracking';
 import RoutePolyline from './RoutePolyline';
 import useSocket from '../hooks/useSocket';
-import { socket } from '../utils/api';
+import api, { socket } from '../utils/api';
 
 const AutoCenter = ({ points }) => {
     const map = useMap();
@@ -21,8 +21,25 @@ const AutoCenter = ({ points }) => {
 const CustomerRideMap = ({ ride }) => {
     const [driverLoc, setDriverLoc] = useState(null);
     
+    useEffect(() => {
+        const fetchInitialLocation = async () => {
+            if (ride?._id) {
+                try {
+                    const res = await api.get(`/rides/${ride._id}/tracking`);
+                    if (res.data && res.data.driverLocation) {
+                        setDriverLoc(res.data.driverLocation);
+                    }
+                } catch (err) {
+                    console.error('Error fetching initial location:', err);
+                }
+            }
+        };
+        fetchInitialLocation();
+    }, [ride?._id]);
+
     useSocket({
         'driver:location:broadcast': (data) => {
+            console.log('Location Update Received:', data);
             if (ride && data.driverId === (ride.driverId?._id || ride.driverId)) {
                 setDriverLoc(data);
             }

@@ -97,7 +97,7 @@ const TrackingPage = () => {
             <Navbar />
             
             {/* MAP SECTION */}
-            <div className="relative flex-1 min-h-[350px] bg-[#f9f9f9] overflow-hidden">
+            <div className="relative flex-1 min-h-[400px] bg-gray-100 overflow-hidden shadow-inner">
                 <CustomerRideMap ride={booking} />
                 
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] z-[1000]">

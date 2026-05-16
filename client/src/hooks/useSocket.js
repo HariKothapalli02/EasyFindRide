@@ -14,14 +14,19 @@ const useSocket = (events = {}) => {
             socket.emit('join', userId);
         }
 
-        const currentEvents = eventsRef.current;
-        Object.keys(currentEvents).forEach(event => {
-            socket.on(event, currentEvents[event]);
+        const handlers = {};
+        Object.keys(eventsRef.current).forEach(event => {
+            handlers[event] = (data) => {
+                if (eventsRef.current[event]) {
+                    eventsRef.current[event](data);
+                }
+            };
+            socket.on(event, handlers[event]);
         });
 
         return () => {
-            Object.keys(currentEvents).forEach(event => {
-                socket.off(event, currentEvents[event]);
+            Object.keys(handlers).forEach(event => {
+                socket.off(event, handlers[event]);
             });
         };
     }, []);
