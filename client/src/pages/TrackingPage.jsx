@@ -14,16 +14,16 @@ const TrackingPage = () => {
 
     useEffect(() => {
         const fetchActiveRide = async () => {
-            if (booking) return; // Already have it from state
-            
             try {
                 const token = localStorage.getItem('token');
                 if (!token) return;
                 
                 const res = await api.get('/rides/active');
-                
                 if (res.data) {
                     setBooking(res.data);
+                } else {
+                    // If no active ride found, redirect home
+                    navigate('/');
                 }
             } catch (err) {
                 console.error('Error fetching active ride:', err);
@@ -31,7 +31,11 @@ const TrackingPage = () => {
         };
 
         fetchActiveRide();
-    }, [booking]);
+        
+        // 30s polling refresh for reliability
+        const interval = setInterval(fetchActiveRide, 30000);
+        return () => clearInterval(interval);
+    }, [navigate]);
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');

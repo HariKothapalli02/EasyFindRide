@@ -22,7 +22,7 @@ const CustomerRideMap = ({ ride }) => {
     const [driverLoc, setDriverLoc] = useState(null);
     
     useEffect(() => {
-        const fetchInitialLocation = async () => {
+        const fetchLocation = async () => {
             if (ride?._id) {
                 try {
                     const res = await api.get(`/rides/${ride._id}/tracking`);
@@ -30,11 +30,16 @@ const CustomerRideMap = ({ ride }) => {
                         setDriverLoc(res.data.driverLocation);
                     }
                 } catch (err) {
-                    console.error('Error fetching initial location:', err);
+                    console.error('Error fetching location fallback:', err);
                 }
             }
         };
-        fetchInitialLocation();
+
+        fetchLocation();
+        
+        // 30s polling fallback for reliability
+        const interval = setInterval(fetchLocation, 30000);
+        return () => clearInterval(interval);
     }, [ride?._id]);
 
     useSocket({
