@@ -8,6 +8,10 @@ const BookingSchema = new mongoose.Schema({
         lat: { type: Number },
         lng: { type: Number }
     },
+    pickupLocation: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number] } // [lng, lat]
+    },
     drop: { type: String, required: true },
     dropCoords: {
         lat: { type: Number },
@@ -19,5 +23,8 @@ const BookingSchema = new mongoose.Schema({
     city: { type: String, default: 'Hyderabad' },
     date: { type: Date, default: Date.now }
 });
+
+// Create geospatial index for nearby search
+BookingSchema.index({ pickupLocation: '2dsphere' });
 
 module.exports = mongoose.model('Booking', BookingSchema);

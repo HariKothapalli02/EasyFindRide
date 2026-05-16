@@ -18,20 +18,32 @@ const auth = (req, res, next) => {
     }
 };
 
-// Get pending rides for driver (Vehicle matching only)
+// Get pending rides for driver (10km proximity + Vehicle matching)
 router.get('/pending', auth, async (req, res) => {
     try {
         const driver = await User.findById(req.user.id);
-        
         if (!driver || driver.role !== 'driver') {
             return res.status(401).json({ msg: 'Only drivers can access pending rides' });
         }
 
+        // Get driver's current location
+        const driverLoc = await DriverLocation.findOne({ driverId: req.user.id });
+        
         const query = { status: 'pending' };
 
-        // Filter by Vehicle Type (Case Insensitive)
+        // 1. Filter by Vehicle Type
         if (driver.vehicleType) {
             query.vehicleType = { $regex: new RegExp(`^${driver.vehicleType}$`, 'i') };
+        }
+
+        // 2. Filter by 10km Proximity if driver location is available
+        if (driverLoc && driverLoc.location) {
+            query.pickupLocation = {
+                $near: {
+                    $geometry: driverLoc.location,
+                    $maxDistance: 10000 // 10km in meters
+                }
+            };
         }
 
         const rides = await Booking.find(query).populate('userId', 'name phone').sort({ date: -1 });
@@ -89,6 +101,10 @@ router.post('/book', auth, async (req, res) => {
             userId: req.user.id,
             pickup,
             pickupCoords,
+            pickupLocation: {
+                type: 'Point',
+                coordinates: [pickupCoords.lng, pickupCoords.lat]
+            },
             drop,
             dropCoords,
             vehicleType: standardizedVehicle,
@@ -100,31 +116,38 @@ router.post('/book', auth, async (req, res) => {
         const io = req.app.get('io');
         const userSockets = req.app.get('userSockets');
 
-        // BROAD DISPATCH: Find all drivers with matching vehicle (Case Insensitive)
+        // PROXIMITY DISPATCH: Find drivers within 10km
+        const nearbyDriverLocs = await DriverLocation.find({
+            location: {
+                $near: {
+                    $geometry: {
+                        type: 'Point',
+                        coordinates: [pickupCoords.lng, pickupCoords.lat]
+                    },
+                    $maxDistance: 10000 // 10km
+                }
+            },
+            isOnline: true
+        });
+
+        const nearbyDriverIds = nearbyDriverLocs.map(l => l.driverId);
         const drivers = await User.find({ 
+            _id: { $in: nearbyDriverIds },
             role: 'driver'
         });
 
         const fullBooking = await Booking.findById(booking._id).populate('userId', 'name phone');
-        console.log(`[DISPATCH] New Ride: ${standardizedCity} | Vehicle: ${standardizedVehicle}`);
-        console.log(`[DISPATCH] Checking ${drivers.length} online drivers...`);
+        console.log(`[PROXIMITY_DISPATCH] New Ride. Nearby drivers found: ${drivers.length}`);
 
         drivers.forEach(driver => {
-            // Check vehicle match (Case Insensitive)
             const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
             
-            console.log(`[DISPATCH] Checking Driver ${driver.name} (Vehicle: ${driver.vehicleType}) for Ride (Vehicle: ${standardizedVehicle})`);
-
             if (vehicleMatch) {
                 const socketId = userSockets.get(driver._id.toString());
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} (Socket: ${socketId})`);
+                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} (10km Radius)`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
-                } else {
-                    console.log(`[DISPATCH] ❌ Driver ${driver.name} is offline (No Socket)`);
                 }
-            } else {
-                console.log(`[DISPATCH] ⏭️ Driver ${driver.name} has ${driver.vehicleType}, but ride is ${standardizedVehicle}. Skipping.`);
             }
         });
 
