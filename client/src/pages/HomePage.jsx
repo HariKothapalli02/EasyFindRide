@@ -293,6 +293,27 @@ const HomePage = () => {
                     <ShieldCheck size={12} fill="currentColor" />
                     Fast & Safe Rides
                 </div>
+                {/* Active Ride Banner (Original Style) */}
+                {currentRideId && !isSearching && (
+                    <div 
+                        onClick={() => navigate('/tracking')}
+                        className="bg-black text-white p-6 rounded-[32px] mb-8 flex items-center justify-between cursor-pointer hover:bg-orange transition-all group shadow-xl shadow-black/10 animate-fade-in"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                                <Navigation size={24} className="animate-pulse" />
+                            </div>
+                            <div>
+                                <div className="font-heading text-xl leading-none mb-1 text-white">Ride in Progress</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-white/50 group-hover:text-white/80">Tap to track live</div>
+                            </div>
+                        </div>
+                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                            <ArrowRight size={20} />
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between gap-6 relative z-10">
                     <div className="flex-1">
                         <h1 className="font-heading text-5xl sm:text-6xl leading-[0.9] tracking-tight text-black mb-2.5">
@@ -583,48 +604,26 @@ const HomePage = () => {
                 </div>
             )}
 
-            {/* FIXED BOTTOM STATUS BAR AREA */}
-            <div className="fixed bottom-24 left-5 right-5 z-[5000] flex flex-col gap-3 pointer-events-none">
-                {/* Active Ride Banner */}
-                {currentRideId && !isSearching && (
-                    <div 
-                        onClick={() => navigate('/tracking')}
-                        className="pointer-events-auto bg-black text-white p-5 rounded-[28px] flex items-center justify-between cursor-pointer hover:bg-orange transition-all group shadow-2xl shadow-black/20 animate-slide-up"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center">
-                                <Navigation size={22} className="animate-pulse" />
-                            </div>
-                            <div>
-                                <div className="font-heading text-lg leading-none mb-1 text-white">Active Trip</div>
-                                <div className="text-[9px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70">Tracking Live</div>
-                            </div>
-                        </div>
-                        <div className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center">
-                            <ArrowRight size={18} />
-                        </div>
-                    </div>
-                )}
-
-                {/* Searching Status Banner */}
+            {/* FIXED BOTTOM SEARCHING BAR */}
+            <div className="fixed bottom-24 left-5 right-5 z-[5000] pointer-events-none">
                 {isSearching && !showSearchModal && (
                     <div 
                         onClick={() => setShowSearchModal(true)}
-                        className="pointer-events-auto bg-orange text-white p-5 rounded-[28px] flex items-center justify-between cursor-pointer hover:bg-black transition-all group shadow-2xl shadow-orange/30 animate-pulse animate-slide-up"
+                        className="pointer-events-auto bg-black text-white p-6 rounded-[32px] flex items-center justify-between cursor-pointer hover:bg-orange transition-all group shadow-2xl shadow-black/20 animate-slide-up"
                     >
                         <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
-                                <Loader2 size={22} className="animate-spin" />
+                            <div className="w-12 h-12 bg-orange rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange/20">
+                                <Loader2 size={24} className="animate-spin" />
                             </div>
                             <div>
-                                <div className="font-heading text-lg leading-none mb-1 text-white">Searching...</div>
-                                <div className="text-[9px] font-black uppercase tracking-widest text-white/60 group-hover:text-white/80">
+                                <div className="font-heading text-xl leading-none mb-1 text-white">Searching...</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/70">
                                     Ends in {Math.floor(searchTimeLeft / 60)}:{(searchTimeLeft % 60).toString().padStart(2, '0')}
                                 </div>
                             </div>
                         </div>
-                        <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-                            <ArrowRight size={18} />
+                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                            <ArrowRight size={20} />
                         </div>
                     </div>
                 )}
