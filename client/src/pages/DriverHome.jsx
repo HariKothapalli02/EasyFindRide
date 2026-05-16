@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import { MapPin, Navigation, Phone, ShieldCheck, Clock } from 'lucide-react';
 import api, { socket } from '../utils/api';
 import DriverLiveTracker from '../components/DriverLiveTracker';
+import DriverRideMap from '../components/DriverRideMap';
 import useLiveLocation from '../hooks/useLiveLocation';
 import { reverseGeocode } from '../utils/osrmService';
 
@@ -147,10 +148,25 @@ const DriverHome = () => {
     };
 
     return (
-        <div className="pb-32 bg-grayBg min-h-screen font-body">
+        <div className="pb-32 bg-grayBg min-h-screen font-body flex flex-col">
             <Navbar />
             <DriverLiveTracker rideId={activeRide?._id} isOnline={online} />
-            <div className="max-w-[500px] mx-auto px-5 pt-8">
+            
+            {activeRide && (
+                <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden shadow-inner shrink-0">
+                    <DriverRideMap ride={activeRide} />
+                    <div className="absolute top-4 left-4 z-[1000]">
+                        <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border border-white shadow-xl flex items-center gap-2">
+                            <div className="w-2 h-2 bg-orange rounded-full animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-black">
+                                {activeRide.status === 'accepted' ? 'Route to Pickup' : 'Route to Drop'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="max-w-[500px] mx-auto w-full px-5 pt-8">
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h2 className="font-heading text-4xl text-black uppercase tracking-tighter">Driver <span className="text-orange">Dashboard</span></h2>
