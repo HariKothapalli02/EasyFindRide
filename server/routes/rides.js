@@ -22,16 +22,11 @@ const auth = (req, res, next) => {
 router.get('/pending', auth, async (req, res) => {
     try {
         const { city } = req.query;
+        // Case-insensitive search for city
         const query = { status: 'pending' };
-        
         if (city) {
-            const searchCity = city.toLowerCase().trim();
-            query.$or = [
-                { city: { $regex: searchCity, $options: 'i' } },
-                { pickup: { $regex: searchCity, $options: 'i' } }
-            ];
+            query.city = { $regex: city, $options: 'i' };
         }
-        
         const rides = await Booking.find(query).populate('userId', 'name phone').sort({ date: -1 });
         res.json(rides);
     } catch (err) {
@@ -48,7 +43,7 @@ router.get('/active', auth, async (req, res) => {
                 { userId: req.user.id },
                 { driverId: req.user.id }
             ],
-            status: { $in: ['pending', 'accepted', 'picked-up'] } 
+            status: { $in: ['accepted', 'picked-up'] } 
         })
         .populate('driverId', 'name phone profilePhoto vehicleNumber vehicleType')
         .populate('userId', 'name phone');
@@ -107,38 +102,30 @@ router.post('/book', auth, async (req, res) => {
         console.log(`[DISPATCH] New Ride: ${standardizedCity} | Vehicle: ${standardizedVehicle}`);
         console.log(`[DISPATCH] Checking ${drivers.length} online drivers...`);
 
-        console.log(`[DISPATCH] Starting dispatch for Booking ID: ${booking._id}`);
-        console.log(`[DISPATCH] Searching among ${drivers.length} registered drivers...`);
-
         drivers.forEach(driver => {
-            const dId = driver._id.toString();
+            // Check vehicle match AND city match manually
             const driverCity = (driver.city || '').toLowerCase().trim();
-            const driverVehicle = (driver.vehicleType || '').toLowerCase().trim();
+            const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
             
-            // SUPER RELAXED MATCHING FOR DEBUGGING
+            // Flexible city matching: Check if names overlap or are found in the full address
             const cityMatch = 
-                !driverCity || !standardizedCity ||
                 driverCity === standardizedCity || 
                 driverCity.includes(standardizedCity) || 
                 standardizedCity.includes(driverCity) ||
                 fullBooking.pickup.toLowerCase().includes(driverCity);
-            
-            const vehicleMatch = !driverVehicle || !standardizedVehicle || driverVehicle === standardizedVehicle;
 
-            console.log(`[DISPATCH] Driver: ${driver.name} (${dId}) | City: "${driverCity}" vs "${standardizedCity}" | Vehicle: "${driverVehicle}" vs "${standardizedVehicle}"`);
-            console.log(`[DISPATCH] Match Stats -> City: ${cityMatch} | Vehicle: ${vehicleMatch}`);
+            console.log(`[DISPATCH] Comparing Driver ${driver.name} (City: ${driverCity}) with Booking (City: ${standardizedCity}). Match: ${cityMatch}`);
 
-            if (cityMatch && vehicleMatch) {
-                const socketId = userSockets.get(dId);
+            if (vehicleMatch && cityMatch) {
+                const socketId = userSockets.get(driver._id.toString());
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ SUCCESS: Sending event to ${driver.name} (Socket: ${socketId})`);
+                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} in ${driverCity} (Socket: ${socketId})`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
                 } else {
-                    console.log(`[DISPATCH] ❌ FAIL: Driver ${driver.name} (${dId}) has NO socket ID in map. Map size: ${userSockets.size}`);
-                    console.log(`[DISPATCH] Map keys: ${Array.from(userSockets.keys()).join(', ')}`);
+                    console.log(`[DISPATCH] ❌ Driver ${driver.name} is offline (No Socket)`);
                 }
             } else {
-                console.log(`[DISPATCH] ⏭️ SKIP: Driver ${driver.name} did not match city/vehicle.`);
+                if (vehicleMatch) console.log(`[DISPATCH] ⏭️ Driver ${driver.name} is in ${driverCity}, but ride is in ${standardizedCity}. Skipping.`);
             }
         });
 

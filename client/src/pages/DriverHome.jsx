@@ -71,15 +71,11 @@ const DriverHome = () => {
         socket.on('connect', joinRoom);
 
         socket.on('new_ride_request', (ride) => {
-            console.log('DriverHome: Received new_ride_request event!', ride);
-            const rideCity = (ride.city || '').toLowerCase().trim();
-            const dCity = (city || '').toLowerCase().trim();
-            
-            console.log(`DriverHome: Matching stats -> Online: ${online}, ActiveRide: ${!!activeRide}`);
-            console.log(`DriverHome: City match details -> RideCity: "${rideCity}", DriverCity: "${dCity}"`);
-
-            // FORCE SHOW EVERYTHING FOR TESTING
-            setPendingRides(prev => [ride, ...prev.filter(r => r._id !== ride._id)]);
+            const rideCity = ride.city.toLowerCase().trim();
+            const driverCity = city.toLowerCase().trim();
+            if (online && !activeRide && (rideCity.includes(driverCity) || driverCity.includes(rideCity))) {
+                setPendingRides(prev => [ride, ...prev.filter(r => r._id !== ride._id)]);
+            }
         });
 
         socket.on('ride_accepted', (ride) => {
