@@ -279,9 +279,12 @@ router.post('/complete', auth, async (req, res) => {
 // Get vehicles and prices based on distance
 router.get('/vehicles', (req, res) => {
     const { distance } = req.query; // distance in km
-    if (!distance) return res.status(400).json({ msg: 'Distance is required' });
+    if (distance === undefined || distance === null) {
+        return res.status(400).json({ msg: 'Distance is required' });
+    }
     
     const dist = parseFloat(distance);
+    if (isNaN(dist)) return res.status(400).json({ msg: 'Invalid distance format' });
     
     // Rates per km: Bike 5, Auto 10, Car 25
     const vehicles = [
