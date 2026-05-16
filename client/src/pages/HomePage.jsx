@@ -56,8 +56,11 @@ const HomePage = () => {
         const checkActiveRide = async () => {
             try {
                 const res = await api.get('/rides/active');
-                if (res.data && res.data.status === 'accepted' || res.data?.status === 'picked-up') {
-                    navigate('/tracking', { state: { booking: res.data } });
+                if (res.data) {
+                    setCurrentRideId(res.data._id);
+                    // Only auto-redirect if the ride was JUST accepted and we were searching
+                    // or if the user is returning to the app and needs to be informed.
+                    // For now, let's just set the state so we can show an "Active Ride" card.
                 }
             } catch (err) {
                 console.error('Error checking active ride:', err);
@@ -231,6 +234,27 @@ const HomePage = () => {
                     <ShieldCheck size={12} fill="currentColor" />
                     Fast & Safe Rides
                 </div>
+                {/* Active Ride Banner */}
+                {currentRideId && !isSearching && (
+                    <div 
+                        onClick={() => navigate('/tracking')}
+                        className="bg-black text-white p-6 rounded-[32px] mb-8 flex items-center justify-between cursor-pointer hover:bg-orange transition-all group shadow-xl shadow-black/10"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                                <Navigation size={24} className="animate-pulse" />
+                            </div>
+                            <div>
+                                <div className="font-heading text-xl leading-none mb-1 text-white">Ride in Progress</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-white/50 group-hover:text-white/80">Tap to track live</div>
+                            </div>
+                        </div>
+                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                            <ArrowRight size={20} />
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between gap-6 relative z-10">
                     <div className="flex-1">
                         <h1 className="font-heading text-5xl sm:text-6xl leading-[0.9] tracking-tight text-black mb-2.5">
