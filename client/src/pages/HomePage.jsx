@@ -417,7 +417,7 @@ const HomePage = () => {
             {/* PREMIUM VEHICLE SELECTION MODAL */}
             {showVehicles && (
                 <div className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 backdrop-blur-[8px] transition-all duration-500">
-                    <div className="w-full max-w-[420px] bg-white/95 backdrop-blur-md rounded-t-[40px] p-8 shadow-[0_-20px_60px_rgba(0,0,0,0.15)] animate-slide-up">
+                    <div className="w-full max-w-[420px] bg-white/95 backdrop-blur-md rounded-t-[40px] p-8 pb-32 shadow-[0_-20px_60px_rgba(0,0,0,0.15)] animate-slide-up">
                         <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-8" />
                         
                         <div className="flex justify-between items-center mb-6">
