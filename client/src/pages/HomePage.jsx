@@ -3,7 +3,8 @@ import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
 import { MapPin, ArrowRight, ShieldCheck, Clock, Wallet, Navigation, Phone, ChevronRight, Loader2, Star, ArrowUpDown } from 'lucide-react';
 import api, { socket } from '../utils/api';
-import { geocode, searchLocations, getRoute } from '../utils/osrmService';
+import { geocode, searchLocations, getRoute, reverseGeocode } from '../utils/osrmService';
+import useLiveLocation from '../hooks/useLiveLocation';
 import MapTracking, { pickupIcon, dropIcon } from '../components/MapTracking';
 import RoutePolyline from '../components/RoutePolyline';
 import { Marker, useMap } from 'react-leaflet';
@@ -157,6 +158,24 @@ const HomePage = () => {
         }
     };
 
+    const { location: currentLoc } = useLiveLocation();
+
+    const useCurrentLocation = async () => {
+        if (!currentLoc) {
+            alert('Location access is not available. Please enable GPS.');
+            return;
+        }
+        try {
+            const address = await reverseGeocode(currentLoc.lat, currentLoc.lng, true);
+            if (address) {
+                setPickup(address);
+                setPickupCoords({ lat: currentLoc.lat, lng: currentLoc.lng });
+            }
+        } catch (err) {
+            console.error('Error getting current location address:', err);
+        }
+    };
+
     const bookRide = async (v) => {
         try {
             const token = localStorage.getItem('token');
@@ -279,15 +298,25 @@ const HomePage = () => {
                 </div>
 
                 <div className="relative mb-3">
-                    <div className="flex items-center gap-3.5 px-5 py-4 bg-white rounded-2xl border border-black/5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-orange-light hover:shadow-md transition-all relative group">
-                        <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] shadow-[0_0_0_4px_rgba(34,197,94,0.15)] animate-pulse shrink-0" />
+                    <div className="relative group/input">
                         <input 
-                            className="flex-1 border-none outline-none font-body text-[15px] font-bold text-black bg-transparent placeholder:text-[#bbb] placeholder:font-semibold" 
                             type="text" 
-                            placeholder="Enter pickup location…" 
+                            placeholder="Enter pickup location..." 
                             value={pickup}
-                            onChange={(e) => { setPickup(e.target.value); setPickupCoords(null); }}
+                            onChange={(e) => {
+                                setPickup(e.target.value);
+                                setPickupCoords(null);
+                            }}
+                            className="w-full pl-12 pr-12 py-5 bg-grayBg rounded-3xl font-bold text-black border-2 border-transparent focus:border-orange/20 transition-all outline-none"
                         />
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                        <button 
+                            onClick={useCurrentLocation}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-orange hover:scale-110 transition-transform p-1 rounded-lg hover:bg-orange/10"
+                            title="Use Current Location"
+                        >
+                            <Navigation size={18} fill="currentColor" className="opacity-70" />
+                        </button>
                     </div>
                     {pickupSuggestions.length > 0 && (
                         <div className="absolute top-full left-0 right-0 z-[1000] bg-white border border-black/5 rounded-2xl mt-1 shadow-2xl overflow-hidden animate-slide-down">

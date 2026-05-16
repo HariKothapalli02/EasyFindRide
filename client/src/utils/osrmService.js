@@ -57,12 +57,14 @@ export const geocode = async (address) => {
     }
 };
 
-export const reverseGeocode = async (lat, lng) => {
+export const reverseGeocode = async (lat, lng, full = false) => {
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
         const response = await axios.get(url);
-        if (response.data && response.data.address) {
-            return response.data.address.city || response.data.address.town || response.data.address.village || response.data.address.suburb;
+        if (response.data) {
+            if (full) return response.data.display_name;
+            const addr = response.data.address;
+            return addr.city || addr.town || addr.village || addr.suburb || addr.state;
         }
         return null;
     } catch (error) {
