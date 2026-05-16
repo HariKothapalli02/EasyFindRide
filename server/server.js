@@ -26,8 +26,9 @@ io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
     socket.on('join', (userId) => {
-        userSockets.set(userId, socket.id);
-        console.log(`User ${userId} joined with socket ${socket.id}`);
+        if (!userId) return;
+        userSockets.set(userId.toString(), socket.id);
+        console.log(`[SOCKET] User ${userId} joined | SocketID: ${socket.id} | Total Connected: ${userSockets.size}`);
     });
 
     // Driver location updates
@@ -63,6 +64,18 @@ io.on('connection', (socket) => {
 // Export io for use in routes
 app.set('io', io);
 app.set('userSockets', userSockets);
+
+// DIAGNOSTIC ROUTE: Check socket connections
+app.get('/api/debug/sockets', (req, res) => {
+    const list = {};
+    userSockets.forEach((value, key) => {
+        list[key] = value;
+    });
+    res.json({
+        total: userSockets.size,
+        sockets: list
+    });
+});
 
 // Connect to MongoDB with optimized settings for serverless
 let isConnected = false;

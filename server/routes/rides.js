@@ -102,35 +102,38 @@ router.post('/book', auth, async (req, res) => {
         console.log(`[DISPATCH] New Ride: ${standardizedCity} | Vehicle: ${standardizedVehicle}`);
         console.log(`[DISPATCH] Checking ${drivers.length} online drivers...`);
 
+        console.log(`[DISPATCH] Starting dispatch for Booking ID: ${booking._id}`);
+        console.log(`[DISPATCH] Searching among ${drivers.length} registered drivers...`);
+
         drivers.forEach(driver => {
-            // Check vehicle match AND city match manually
+            const dId = driver._id.toString();
             const driverCity = (driver.city || '').toLowerCase().trim();
             const driverVehicle = (driver.vehicleType || '').toLowerCase().trim();
             
-            // Standardize vehicle types for comparison
-            const vehicleMatch = driverVehicle === standardizedVehicle;
-            
-            // Flexible city matching: 
+            // SUPER RELAXED MATCHING FOR DEBUGGING
             const cityMatch = 
+                !driverCity || !standardizedCity ||
                 driverCity === standardizedCity || 
                 driverCity.includes(standardizedCity) || 
                 standardizedCity.includes(driverCity) ||
-                fullBooking.pickup.toLowerCase().includes(driverCity) ||
-                fullBooking.pickup.toLowerCase().includes(standardizedCity);
+                fullBooking.pickup.toLowerCase().includes(driverCity);
+            
+            const vehicleMatch = !driverVehicle || !standardizedVehicle || driverVehicle === standardizedVehicle;
 
-            console.log(`[DISPATCH] Evaluating Driver: ${driver.name} | DriverCity: "${driverCity}" | RideCity: "${standardizedCity}" | DriverVehicle: "${driverVehicle}" | RideVehicle: "${standardizedVehicle}"`);
-            console.log(`[DISPATCH] Result -> CityMatch: ${cityMatch} | VehicleMatch: ${vehicleMatch}`);
+            console.log(`[DISPATCH] Driver: ${driver.name} (${dId}) | City: "${driverCity}" vs "${standardizedCity}" | Vehicle: "${driverVehicle}" vs "${standardizedVehicle}"`);
+            console.log(`[DISPATCH] Match Stats -> City: ${cityMatch} | Vehicle: ${vehicleMatch}`);
 
             if (cityMatch && vehicleMatch) {
-                const socketId = userSockets.get(driver._id.toString());
+                const socketId = userSockets.get(dId);
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ SIGNAL SENT -> ${driver.name} (Socket: ${socketId})`);
+                    console.log(`[DISPATCH] ✅ SUCCESS: Sending event to ${driver.name} (Socket: ${socketId})`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
                 } else {
-                    console.log(`[DISPATCH] ❌ OFFLINE -> ${driver.name} (No active socket connection)`);
+                    console.log(`[DISPATCH] ❌ FAIL: Driver ${driver.name} (${dId}) has NO socket ID in map. Map size: ${userSockets.size}`);
+                    console.log(`[DISPATCH] Map keys: ${Array.from(userSockets.keys()).join(', ')}`);
                 }
             } else {
-                console.log(`[DISPATCH] ⏭️ SKIPPED -> ${driver.name} (Match conditions not met)`);
+                console.log(`[DISPATCH] ⏭️ SKIP: Driver ${driver.name} did not match city/vehicle.`);
             }
         });
 
