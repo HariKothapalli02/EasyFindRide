@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
 import { MapPin, ArrowRight, ShieldCheck, Clock, Wallet, Navigation, Phone, ChevronRight, Loader2, Star, ArrowUpDown } from 'lucide-react';
 import api, { socket } from '../utils/api';
-import { geocode, searchLocations } from '../utils/osrmService';
+import { geocode, searchLocations, getRoute } from '../utils/osrmService';
 import MapTracking, { pickupIcon, dropIcon } from '../components/MapTracking';
 import RoutePolyline from '../components/RoutePolyline';
 import { Marker, useMap } from 'react-leaflet';
