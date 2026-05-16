@@ -192,13 +192,12 @@ const TrackingPage = () => {
                         </div>
                     )}
                 </div>
-            </div>
 
-            <div className="fixed bottom-0 left-0 right-0 z-[100]">
-                <BottomNav />
+                <div className="fixed bottom-0 left-0 right-0 z-[100]">
+                    <BottomNav />
+                </div>
             </div>
-        </div>
-    );
+        );
 };
 
 export default TrackingPage;
