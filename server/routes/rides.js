@@ -87,7 +87,7 @@ router.get('/active', auth, async (req, res) => {
                 { userId: req.user.id },
                 { driverId: req.user.id }
             ],
-            status: { $in: ['accepted', 'picked-up'] } 
+            status: { $in: ['pending', 'accepted', 'picked-up'] } 
         })
         .populate('driverId', 'name phone profilePhoto vehicleNumber vehicleType')
         .populate('userId', 'name phone');
