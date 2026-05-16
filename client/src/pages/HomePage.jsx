@@ -420,60 +420,56 @@ const HomePage = () => {
                     <div className="w-full max-w-[420px] bg-white/95 backdrop-blur-md rounded-t-[40px] p-8 shadow-[0_-20px_60px_rgba(0,0,0,0.15)] animate-slide-up">
                         <div className="w-12 h-1.5 bg-black/10 rounded-full mx-auto mb-8" />
                         
-                        <div className="flex justify-between items-start mb-8">
+                        <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h3 className="font-heading text-4xl leading-tight text-black">
-                                    Select <span className="text-orange">Your Ride</span>
-                                </h3>
-                                <div className="flex items-center gap-2.5 mt-2.5 bg-orange/5 px-4 py-2 rounded-2xl w-fit border border-orange/10">
-                                    <Navigation size={14} className="text-orange fill-orange/20" />
-                                    <span className="text-[11px] font-black text-black/60 uppercase tracking-[1.5px]">
-                                        Route: <span className="text-orange">{distance} KM</span>
+                                <h3 className="font-heading text-3xl text-black">Select <span className="text-orange">Ride</span></h3>
+                                <div className="flex items-center gap-2 mt-1.5 bg-black/5 px-3 py-1 rounded-full w-fit">
+                                    <Navigation size={10} className="text-orange" />
+                                    <span className="text-[9px] font-black text-black/40 uppercase tracking-widest">
+                                        Distance: <span className="text-black">{distance} KM</span>
                                     </span>
                                 </div>
                             </div>
                             <button 
                                 onClick={() => setShowVehicles(false)} 
-                                className="bg-grayBg hover:bg-black hover:text-white transition-all w-12 h-12 rounded-2xl flex items-center justify-center text-[#888] shadow-sm"
+                                className="bg-grayBg hover:bg-black hover:text-white transition-all w-10 h-10 rounded-xl flex items-center justify-center text-[#888]"
                             >
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>
 
-                        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-3">
                             {vehicles.map((v, i) => (
                                 <div 
                                     key={i} 
                                     onClick={() => bookRide(v)} 
-                                    className="relative flex items-center justify-between p-6 bg-white border-2 border-black/5 rounded-[32px] hover:border-orange hover:shadow-[0_20px_40px_rgba(255,95,0,0.1)] transition-all cursor-pointer active:scale-[0.98] group"
+                                    className="relative flex items-center justify-between p-4 bg-white border border-black/5 rounded-[24px] hover:border-orange/30 hover:bg-orange/5 transition-all cursor-pointer active:scale-[0.98] group overflow-hidden"
                                 >
-                                    <div className="flex items-center gap-6">
-                                        <div className={`w-16 h-16 rounded-[22px] flex items-center justify-center text-white shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${
-                                            v.type === 'Bike' ? 'bg-gradient-to-br from-orange to-orange-dark shadow-orange/30' : 
-                                            v.type === 'Auto' ? 'bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-500/30' : 
-                                            'bg-gradient-to-br from-purple-600 to-purple-800 shadow-purple-600/30'
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-transform duration-300 group-hover:scale-105 ${
+                                            v.type === 'Bike' ? 'bg-orange shadow-orange/20' : 
+                                            v.type === 'Auto' ? 'bg-blue-600 shadow-blue-500/20' : 
+                                            'bg-purple-700 shadow-purple-600/20'
                                         }`}>
-                                            {v.type === 'Bike' ? <Navigation size={32} fill="currentColor" className="opacity-80" /> : 
-                                             v.type === 'Auto' ? <Clock size={32} strokeWidth={2.5} /> : 
-                                             <Navigation size={32} fill="currentColor" className="rotate-45 opacity-80" />}
+                                            {v.type === 'Bike' ? <Navigation size={24} fill="currentColor" /> : 
+                                             v.type === 'Auto' ? <Clock size={24} strokeWidth={2.5} /> : 
+                                             <Navigation size={24} fill="currentColor" className="rotate-45" />}
                                         </div>
                                         <div>
-                                            <div className="font-heading text-3xl tracking-tight text-black mb-1">{v.type}</div>
-                                            <div className="flex items-center gap-2 text-[11px] font-black text-[#888] uppercase tracking-wider">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                2 mins away
+                                            <div className="font-heading text-xl text-black">{v.type}</div>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#888] uppercase">
+                                                <div className="w-1 h-1 rounded-full bg-green-500" />
+                                                2 mins
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right pr-2">
-                                        <div className="font-heading text-4xl text-orange leading-none mb-1">₹{v.price}</div>
-                                        <div className="inline-block px-2.5 py-0.5 bg-black/5 rounded-full text-[9px] font-black text-black/40 uppercase tracking-widest group-hover:bg-orange/10 group-hover:text-orange transition-colors">
-                                            Premium
-                                        </div>
+                                    <div className="text-right">
+                                        <div className="font-heading text-2xl text-orange mb-0.5">₹{v.price}</div>
+                                        <div className="text-[8px] font-black text-black/20 uppercase tracking-tighter">Fastest</div>
                                     </div>
                                     
-                                    {/* Subtle decorative element */}
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange/5 rounded-full -mr-12 -mt-12 group-hover:bg-orange/10 transition-colors" />
+                                    {/* Subtle gradient border on hover */}
+                                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange/10 rounded-[24px] pointer-events-none" />
                                 </div>
                             ))}
                         </div>
