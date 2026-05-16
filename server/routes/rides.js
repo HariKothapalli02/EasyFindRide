@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const DriverLocation = require('../models/DriverLocation');
 
 // Middleware to verify JWT
 const auth = (req, res, next) => {
@@ -72,7 +73,7 @@ router.get('/history', auth, async (req, res) => {
 // Book a Ride (Notify Drivers)
 router.post('/book', auth, async (req, res) => {
     try {
-        const { pickup, drop, vehicleType, price, city } = req.body;
+        const { pickup, drop, vehicleType, price, city, pickupCoords, dropCoords } = req.body;
         // Standardize everything
         const standardizedCity = (city || pickup.split(',')[0]).toLowerCase().trim();
         const standardizedVehicle = (vehicleType || '').toLowerCase().trim();
@@ -80,7 +81,9 @@ router.post('/book', auth, async (req, res) => {
         const newBooking = new Booking({
             userId: req.user.id,
             pickup,
+            pickupCoords,
             drop,
+            dropCoords,
             vehicleType: standardizedVehicle,
             price,
             city: standardizedCity
@@ -265,6 +268,89 @@ router.get('/vehicles', (req, res) => {
         { type: 'Car', price: 150, icon: 'Car' }
     ];
     res.json(vehicles);
+});
+
+// Update Driver Location
+router.post('/location', auth, async (req, res) => {
+    try {
+        const { lat, lng, heading, speed, isOnline } = req.body;
+        const driverId = req.user.id;
+
+        const locationUpdate = {
+            driverId,
+            location: {
+                type: 'Point',
+                coordinates: [lng, lat]
+            },
+            lat,
+            lng,
+            heading: heading || 0,
+            speed: speed || 0,
+            isOnline: isOnline !== undefined ? isOnline : true,
+            updatedAt: new Date()
+        };
+
+        const driverLocation = await DriverLocation.findOneAndUpdate(
+            { driverId },
+            locationUpdate,
+            { upsert: true, new: true }
+        );
+
+        res.json(driverLocation);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+});
+
+// Get Nearby Drivers
+router.get('/nearby', async (req, res) => {
+    try {
+        const { lat, lng, radius = 5, vehicleType } = req.query; // radius in km
+        if (!lat || !lng) return res.status(400).json({ msg: 'Coordinates are required' });
+
+        const drivers = await DriverLocation.find({
+            location: {
+                $near: {
+                    $geometry: {
+                        type: 'Point',
+                        coordinates: [parseFloat(lng), parseFloat(lat)]
+                    },
+                    $maxDistance: parseFloat(radius) * 1000 // Convert km to meters
+                }
+            },
+            isOnline: true
+        }).populate('driverId', 'name vehicleType vehicleNumber');
+
+        // Filter by vehicle type if provided
+        let filteredDrivers = drivers;
+        if (vehicleType) {
+            filteredDrivers = drivers.filter(d => 
+                d.driverId && d.driverId.vehicleType && d.driverId.vehicleType.toLowerCase() === vehicleType.toLowerCase()
+            );
+        }
+
+        res.json(filteredDrivers);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+});
+
+// Get Tracking Data for a specific ride
+router.get('/:rideId/tracking', auth, async (req, res) => {
+    try {
+        const ride = await Booking.findById(req.params.rideId).populate('driverId');
+        if (!ride) return res.status(404).json({ msg: 'Ride not found' });
+
+        if (!ride.driverId) return res.json({ ride, driverLocation: null });
+
+        const driverLocation = await DriverLocation.findOne({ driverId: ride.driverId._id });
+        res.json({ ride, driverLocation });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
 });
 
 module.exports = router;

@@ -30,6 +30,28 @@ io.on('connection', (socket) => {
         console.log(`User ${userId} joined with socket ${socket.id}`);
     });
 
+    // Driver location updates
+    socket.on('driver:location:update', (data) => {
+        const { driverId, lat, lng, heading, speed, rideId } = data;
+        // Broadcast to specific ride room if ride is active
+        if (rideId) {
+            io.to(`ride:${rideId}`).emit('driver:location:broadcast', {
+                driverId,
+                lat,
+                lng,
+                heading,
+                speed,
+                timestamp: new Date()
+            });
+        }
+    });
+
+    // Customer tracking room
+    socket.on('customer:track:ride', (rideId) => {
+        socket.join(`ride:${rideId}`);
+        console.log(`Socket ${socket.id} started tracking ride ${rideId}`);
+    });
+
     socket.on('disconnect', () => {
         userSockets.forEach((value, key) => {
             if (value === socket.id) userSockets.delete(key);

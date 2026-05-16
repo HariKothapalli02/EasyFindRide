@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import { Phone, Navigation, ShieldCheck, MapPin, Clock, Star, MessageSquare } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api, { socket } from '../utils/api';
+import CustomerRideMap from '../components/CustomerRideMap';
 
 const TrackingPage = () => {
     const location = useLocation();
@@ -96,28 +97,14 @@ const TrackingPage = () => {
             <Navbar />
             
             {/* MAP SECTION */}
-            <div className="relative flex-1 min-h-[350px] bg-[#f9f9f9]">
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <div className="absolute top-[20%] left-[10%] w-[80%] h-[1px] bg-black rotate-12" />
-                    <div className="absolute top-[40%] left-0 w-[100%] h-[1px] bg-black -rotate-6" />
-                    <div className="absolute top-0 left-[30%] w-[1px] h-[100%] bg-black rotate-45" />
-                    <div className="absolute top-0 right-[25%] w-[1px] h-[100%] bg-black -rotate-12" />
-                </div>
+            <div className="relative flex-1 min-h-[350px] bg-[#f9f9f9] overflow-hidden">
+                <CustomerRideMap ride={booking} />
                 
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative">
-                        <div className="w-16 h-16 bg-orange rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(255,95,0,0.4)] animate-bounce-slow">
-                            <Navigation size={32} />
-                        </div>
-                        <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-orange/10 rounded-full animate-ping" />
-                    </div>
-                </div>
-
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] z-20">
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] z-[1000]">
                     <div className="bg-white/90 backdrop-blur-md px-6 py-3.5 rounded-full border border-white shadow-xl flex items-center gap-3 justify-center animate-slide-down">
                         <div className={`w-2 h-2 ${isPickedUp ? 'bg-orange' : 'bg-green-500'} rounded-full animate-pulse`} />
                         <span className="text-[12px] font-black uppercase tracking-widest text-black">
-                            {isPickedUp ? 'Picked Up & On the way' : 'Driver is arriving in 2 mins'}
+                            {isPickedUp ? 'Picked Up & On the way' : 'Driver is arriving soon'}
                         </span>
                     </div>
                 </div>

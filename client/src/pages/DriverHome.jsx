@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
 import { MapPin, Navigation, Phone, ShieldCheck, Clock } from 'lucide-react';
 import api, { socket } from '../utils/api';
+import DriverLiveTracker from '../components/DriverLiveTracker';
 
 const DriverHome = () => {
     const [activeRide, setActiveRide] = useState(null);
@@ -128,6 +129,7 @@ const DriverHome = () => {
     return (
         <div className="pb-32 bg-grayBg min-h-screen font-body">
             <Navbar />
+            <DriverLiveTracker rideId={activeRide?._id} isOnline={online} />
             <div className="max-w-[500px] mx-auto px-5 pt-8">
                 <div className="flex items-center justify-between mb-8">
                     <div>

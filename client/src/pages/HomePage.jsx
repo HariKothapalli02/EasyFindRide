@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
 import { MapPin, ArrowRight, ShieldCheck, Clock, Wallet, Navigation, Phone, ChevronRight, Loader2, Star, ArrowUpDown } from 'lucide-react';
 import api, { socket } from '../utils/api';
+import { geocode } from '../utils/osrmService';
 import { useNavigate } from 'react-router-dom';
 import DriverHome from './DriverHome';
 
@@ -59,9 +60,15 @@ const HomePage = () => {
             // Use full pickup location for wider matching on driver side
             const bookingCity = pickup.trim() || 'Hyderabad';
             
+            // Geocode pickup and drop
+            const pCoords = await geocode(pickup);
+            const dCoords = await geocode(drop);
+
             await api.post('/rides/book', {
                 pickup,
+                pickupCoords: pCoords,
                 drop,
+                dropCoords: dCoords,
                 vehicleType: v.type,
                 price: v.price,
                 city: bookingCity
