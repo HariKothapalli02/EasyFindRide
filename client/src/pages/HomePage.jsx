@@ -101,11 +101,8 @@ const HomePage = () => {
             return;
         }
         try {
-            console.log('Calculating route for:', pickupCoords, dropCoords);
             // Get real distance from OSRM
             const routeData = await getRoute(pickupCoords, dropCoords);
-            console.log('Route data:', routeData);
-            
             if (!routeData) {
                 alert('Could not calculate route between these locations.');
                 return;
@@ -114,15 +111,12 @@ const HomePage = () => {
             const dist = parseFloat(routeData.distance);
             setDistance(dist);
 
-            console.log(`Fetching vehicles for distance: ${dist} km`);
             const res = await api.get(`/rides/vehicles?distance=${dist}`);
-            console.log('Vehicle prices received:', res.data);
-            
             setVehicles(res.data);
             setShowVehicles(true);
         } catch (err) {
             console.error('Price calculation error:', err);
-            alert(`Error calculating price: ${err.response?.data?.msg || err.message}`);
+            alert('Error calculating price. Please try again.');
         }
     };
 
