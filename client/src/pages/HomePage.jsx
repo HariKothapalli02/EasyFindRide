@@ -90,19 +90,37 @@ const HomePage = () => {
         };
     }, [navigate]);
 
-    // POLLING WHILE SEARCHING
+    // POLLING WHILE SEARCHING OR ACTIVE RIDE
     useEffect(() => {
         let interval;
-        if (isSearching && currentRideId) {
+        if (isSearching || currentRideId) {
             interval = setInterval(async () => {
                 try {
                     const res = await api.get('/rides/active');
-                    if (res.data && (res.data.status === 'accepted' || res.data.status === 'picked-up')) {
+                    
+                    // If no active ride is found, clear all states
+                    if (!res.data) {
+                        setIsSearching(false);
+                        setShowSearchModal(false);
+                        setCurrentRideId(null);
+                        return;
+                    }
+
+                    const status = res.data.status;
+
+                    // If searching and accepted/picked-up, go to tracking
+                    if (isSearching && (status === 'accepted' || status === 'picked-up')) {
                         console.log('Polling found accepted ride!');
                         setIsSearching(false);
                         setShowSearchModal(false);
-                        clearInterval(interval);
                         navigate('/tracking', { state: { booking: res.data } });
+                    }
+
+                    // If ride is completed or cancelled, clear states
+                    if (status === 'completed' || status === 'cancelled') {
+                        setIsSearching(false);
+                        setShowSearchModal(false);
+                        setCurrentRideId(null);
                     }
                 } catch (err) {
                     console.error('Polling error:', err);
