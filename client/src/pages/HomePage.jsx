@@ -152,28 +152,24 @@ const HomePage = () => {
                 </div>
             )}
 
-            {/* HERO & MAP PREVIEW */}
-            <div className="relative p-6 pb-2 overflow-hidden bg-white">
+            {/* HERO */}
+            <div className="relative p-6 pb-5 overflow-hidden bg-white">
                 <div className="inline-flex items-center gap-2 bg-orange/10 text-orange-dark text-[10px] font-black tracking-widest uppercase px-5 py-2.5 rounded-full mb-3 border border-orange/10 backdrop-blur-sm z-10 relative">
                     <ShieldCheck size={12} fill="currentColor" />
                     Fast & Safe Rides
                 </div>
-                
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                    <div className="flex-1 w-full">
-                        <h1 className="font-heading text-4xl sm:text-6xl leading-[0.9] tracking-tight text-black mb-2.5">
-                            <span className="text-orange">Where</span> to?
+                <div className="flex items-center justify-between gap-6 relative z-10">
+                    <div className="flex-1">
+                        <h1 className="font-heading text-5xl sm:text-6xl leading-[0.9] tracking-tight text-black mb-2.5">
+                            <span className="text-orange">Where</span><br />would you<br />like to<br /><span className="text-orange">go?</span>
                         </h1>
-                        
-                        {/* MAP PREVIEW BOX */}
-                        <div className="w-full h-[200px] bg-grayBg rounded-3xl mt-4 overflow-hidden border border-black/5 relative shadow-inner">
-                            <MapTracking center={[17.3850, 78.4867]} zoom={12}>
-                                {pickupCoords && <Marker position={[pickupCoords.lat, pickupCoords.lng]} icon={pickupIcon} />}
-                                {dropCoords && <Marker position={[dropCoords.lat, dropCoords.lng]} icon={dropIcon} />}
-                                {pickupCoords && dropCoords && <RoutePolyline start={pickupCoords} end={dropCoords} />}
-                                <AutoCenter points={[pickupCoords ? [pickupCoords.lat, pickupCoords.lng] : null, dropCoords ? [dropCoords.lat, dropCoords.lng] : null].filter(Boolean)} />
-                            </MapTracking>
-                        </div>
+                        <p className="text-sm font-semibold text-[#555] leading-relaxed max-w-[280px]">
+                            Book your ride with a smooth, colorful & professional experience.
+                        </p>
+                    </div>
+                    <div className="flex-1 flex justify-end animate-bounce-slow">
+                        <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-[220px] h-[220px] rounded-full bg-radial-gradient from-orange/10 to-transparent -z-10" />
+                        <img src="/11.jpg" alt="Bike" className="w-full max-w-[420px] drop-shadow-[0_20px_40px_rgba(0,0,0,0.1)]" />
                     </div>
                 </div>
             </div>
