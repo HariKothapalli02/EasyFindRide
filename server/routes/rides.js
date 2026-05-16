@@ -18,12 +18,24 @@ const auth = (req, res, next) => {
     }
 };
 
-// Get pending rides for driver's city
+// Get pending rides for driver (City + Vehicle matching)
 router.get('/pending', auth, async (req, res) => {
     try {
         const { city } = req.query;
-        const query = { status: 'pending' };
+        const driver = await User.findById(req.user.id);
         
+        if (!driver || driver.role !== 'driver') {
+            return res.status(401).json({ msg: 'Only drivers can access pending rides' });
+        }
+
+        const query = { status: 'pending' };
+
+        // 1. Filter by Vehicle Type (Case Insensitive)
+        if (driver.vehicleType) {
+            query.vehicleType = { $regex: new RegExp(`^${driver.vehicleType}$`, 'i') };
+        }
+
+        // 2. Filter by City (Flexible)
         if (city) {
             const normalizedCity = city.toLowerCase().trim();
             query.$or = [
@@ -31,6 +43,7 @@ router.get('/pending', auth, async (req, res) => {
                 { pickup: { $regex: normalizedCity, $options: 'i' } }
             ];
         }
+
         const rides = await Booking.find(query).populate('userId', 'name phone').sort({ date: -1 });
         res.json(rides);
     } catch (err) {

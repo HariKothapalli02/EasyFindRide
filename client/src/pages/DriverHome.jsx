@@ -38,7 +38,9 @@ const DriverHome = () => {
 
     useEffect(() => {
         const updateCity = async () => {
-            if (location && online) {
+            // Only auto-detect city if it hasn't been set yet or if it's still at default
+            const isInitial = !localStorage.getItem('driverCity');
+            if (location && online && isInitial) {
                 const cityName = await reverseGeocode(location.lat, location.lng);
                 if (cityName) {
                     const normalizedCity = cityName.toLowerCase();
