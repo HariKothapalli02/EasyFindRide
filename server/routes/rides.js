@@ -22,11 +22,16 @@ const auth = (req, res, next) => {
 router.get('/pending', auth, async (req, res) => {
     try {
         const { city } = req.query;
-        // Case-insensitive search for city
         const query = { status: 'pending' };
+        
         if (city) {
-            query.city = { $regex: city, $options: 'i' };
+            const searchCity = city.toLowerCase().trim();
+            query.$or = [
+                { city: { $regex: searchCity, $options: 'i' } },
+                { pickup: { $regex: searchCity, $options: 'i' } }
+            ];
         }
+        
         const rides = await Booking.find(query).populate('userId', 'name phone').sort({ date: -1 });
         res.json(rides);
     } catch (err) {
