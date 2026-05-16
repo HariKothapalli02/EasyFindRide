@@ -4,6 +4,8 @@ import BottomNav from '../components/BottomNav';
 import { MapPin, Navigation, Phone, ShieldCheck, Clock } from 'lucide-react';
 import api, { socket } from '../utils/api';
 import DriverLiveTracker from '../components/DriverLiveTracker';
+import useLiveLocation from '../hooks/useLiveLocation';
+import { reverseGeocode } from '../utils/osrmService';
 
 const DriverHome = () => {
     const [activeRide, setActiveRide] = useState(null);
@@ -31,8 +33,26 @@ const DriverHome = () => {
         }
     };
 
+    const { location } = useLiveLocation();
+
     useEffect(() => {
-        localStorage.setItem('driverCity', city);
+        const updateCity = async () => {
+            if (location && online) {
+                const cityName = await reverseGeocode(location.lat, location.lng);
+                if (cityName) {
+                    const normalizedCity = cityName.toLowerCase();
+                    setCity(normalizedCity);
+                    localStorage.setItem('driverCity', normalizedCity);
+                    
+                    // Sync city with backend for dispatch matching
+                    api.post('/auth/update-city', { city: normalizedCity }).catch(e => console.error(e));
+                }
+            }
+        };
+        updateCity();
+    }, [location, online]);
+
+    useEffect(() => {
         fetchData();
         const interval = setInterval(fetchData, 5000);
         window.addEventListener('refresh_driver_ride', fetchData);

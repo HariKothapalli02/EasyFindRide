@@ -74,4 +74,20 @@ router.get('/profile', async (req, res) => {
     }
 });
 
+// Update User City
+router.post('/update-city', async (req, res) => {
+    try {
+        const token = req.header('x-auth-token');
+        if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { city } = req.body;
+        
+        await User.findByIdAndUpdate(decoded.user.id, { city });
+        res.json({ msg: 'City updated successfully' });
+    } catch (err) {
+        res.status(500).send('Server error');
+    }
+});
+
 module.exports = router;

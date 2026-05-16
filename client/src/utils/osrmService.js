@@ -41,4 +41,18 @@ export const geocode = async (address) => {
     }
 };
 
-export default { getRoute, geocode };
+export const reverseGeocode = async (lat, lng) => {
+    try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+        const response = await axios.get(url);
+        if (response.data && response.data.address) {
+            return response.data.address.city || response.data.address.town || response.data.address.village || response.data.address.suburb;
+        }
+        return null;
+    } catch (error) {
+        console.error('Reverse Geocoding Error:', error);
+        return null;
+    }
+};
+
+export default { getRoute, geocode, reverseGeocode };

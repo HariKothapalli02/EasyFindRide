@@ -103,15 +103,21 @@ router.post('/book', auth, async (req, res) => {
         console.log(`[DISPATCH] Checking ${drivers.length} online drivers...`);
 
         drivers.forEach(driver => {
-            // Check vehicle match manually to be safe with casing
-            if (driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle) {
+            // Check vehicle match AND city match manually
+            const driverCity = (driver.city || '').toLowerCase().trim();
+            const vehicleMatch = driver.vehicleType && driver.vehicleType.toLowerCase().trim() === standardizedVehicle;
+            const cityMatch = driverCity === standardizedCity || driverCity.includes(standardizedCity) || standardizedCity.includes(driverCity);
+
+            if (vehicleMatch && cityMatch) {
                 const socketId = userSockets.get(driver._id.toString());
                 if (socketId) {
-                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} (Socket: ${socketId})`);
+                    console.log(`[DISPATCH] ✅ Signal Sent to ${driver.name} in ${driverCity} (Socket: ${socketId})`);
                     io.to(socketId).emit('new_ride_request', fullBooking);
                 } else {
                     console.log(`[DISPATCH] ❌ Driver ${driver.name} is offline (No Socket)`);
                 }
+            } else {
+                if (vehicleMatch) console.log(`[DISPATCH] ⏭️ Driver ${driver.name} is in ${driverCity}, but ride is in ${standardizedCity}. Skipping.`);
             }
         });
 
@@ -295,6 +301,10 @@ router.post('/location', auth, async (req, res) => {
             locationUpdate,
             { upsert: true, new: true }
         );
+
+        // Update User's city for dispatch matching (Optional but helpful for existing logic)
+        // We can do this in the background or just let the driver app send it.
+        // For now, let's just make sure the DriverDashboard sends the city periodically if needed.
 
         res.json(driverLocation);
     } catch (err) {
