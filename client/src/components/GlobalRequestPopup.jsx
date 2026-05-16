@@ -22,13 +22,9 @@ const GlobalRequestPopup = () => {
         socket.on('connect', joinRoom);
 
         socket.on('new_ride_request', (ride) => {
-            const rideCity = ride.city.toLowerCase().trim();
-            const city = driverCity.toLowerCase().trim();
-            
-            // Global check for city match
-            if (rideCity.includes(city) || city.includes(rideCity)) {
-                setRequest(ride);
-            }
+            console.log('Received ride request via socket:', ride);
+            // Backend already filters by city and vehicle, so we show it directly
+            setRequest(ride);
         });
 
         socket.on('ride_accepted', (ride) => {
