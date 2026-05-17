@@ -78,39 +78,21 @@ const HomePage = () => {
 
         socket.on('connect', joinRoom);
 
-        socket.on('ride_accepted', (booking) => {
+        const onRideAccepted = (booking) => {
             console.log('Ride Accepted Event Received!', booking);
             setIsSearching(false);
             navigate('/tracking', { state: { booking } });
-        });
+        };
+
+        socket.on('ride_accepted', onRideAccepted);
 
         return () => {
-            socket.off('ride_accepted');
-            socket.off('connect');
+            socket.off('ride_accepted', onRideAccepted);
+            socket.off('connect', joinRoom);
         };
     }, [navigate]);
 
-    // POLLING WHILE SEARCHING
-    useEffect(() => {
-        let interval;
-        if (isSearching && currentRideId) {
-            interval = setInterval(async () => {
-                try {
-                    const res = await api.get('/rides/active');
-                    if (res.data && (res.data.status === 'accepted' || res.data.status === 'picked-up')) {
-                        console.log('Polling found accepted ride!');
-                        setIsSearching(false);
-                        setShowSearchModal(false);
-                        clearInterval(interval);
-                        navigate('/tracking', { state: { booking: res.data } });
-                    }
-                } catch (err) {
-                    console.error('Polling error:', err);
-                }
-            }, 3000);
-        }
-        return () => clearInterval(interval);
-    }, [isSearching, currentRideId, navigate]);
+    // No polling during search. Relying entirely on socket 'ride_accepted' event for performance.
 
     // SEARCH TIMEOUT TIMER (3 MINUTES)
     useEffect(() => {

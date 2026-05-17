@@ -19,7 +19,7 @@ const NearbyDriversLayer = ({ center, vehicleType }) => {
         };
 
         fetchNearby();
-        const interval = setInterval(fetchNearby, 10000); // Update every 10s
+        const interval = setInterval(fetchNearby, 60000); // Update every 60s
         return () => clearInterval(interval);
     }, [center, vehicleType]);
 

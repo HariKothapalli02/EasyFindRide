@@ -28,14 +28,21 @@ const FloatingTracker = () => {
 
         if (myId) socket.emit('join', myId);
 
-        socket.on('ride_accepted', (ride) => setActiveRide(ride));
-        socket.on('ride_picked_up', (ride) => setActiveRide(ride));
-        socket.on('ride_completed', () => setActiveRide(null));
+        const onRideAccepted = (ride) => setActiveRide(ride);
+        const onRidePickedUp = (ride) => setActiveRide(ride);
+        const onRideCompleted = () => setActiveRide(null);
+        const onRideCancelled = () => setActiveRide(null);
+
+        socket.on('ride_accepted', onRideAccepted);
+        socket.on('ride_picked_up', onRidePickedUp);
+        socket.on('ride_completed', onRideCompleted);
+        socket.on('ride_cancelled', onRideCancelled);
 
         return () => {
-            socket.off('ride_accepted');
-            socket.off('ride_picked_up');
-            socket.off('ride_completed');
+            socket.off('ride_accepted', onRideAccepted);
+            socket.off('ride_picked_up', onRidePickedUp);
+            socket.off('ride_completed', onRideCompleted);
+            socket.off('ride_cancelled', onRideCancelled);
         };
     }, [myId]);
 

@@ -37,8 +37,8 @@ const CustomerRideMap = ({ ride }) => {
 
         fetchLocation();
         
-        // 30s polling fallback for reliability
-        const interval = setInterval(fetchLocation, 30000);
+        // 120s polling fallback for reliability
+        const interval = setInterval(fetchLocation, 120000);
         return () => clearInterval(interval);
     }, [ride?._id]);
 

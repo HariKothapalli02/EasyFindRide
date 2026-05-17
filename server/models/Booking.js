@@ -26,5 +26,8 @@ const BookingSchema = new mongoose.Schema({
 
 // Create geospatial index for nearby search
 BookingSchema.index({ pickupLocation: '2dsphere' });
+BookingSchema.index({ status: 1 });
+BookingSchema.index({ userId: 1, status: 1 });
+BookingSchema.index({ driverId: 1, status: 1 });
 
 module.exports = mongoose.model('Booking', BookingSchema);

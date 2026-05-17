@@ -32,8 +32,8 @@ const TrackingPage = () => {
 
         fetchActiveRide();
         
-        // 30s polling refresh for reliability
-        const interval = setInterval(fetchActiveRide, 30000);
+        // 120s polling refresh for reliability fallback
+        const interval = setInterval(fetchActiveRide, 120000);
         return () => clearInterval(interval);
     }, [navigate]);
 
@@ -49,26 +49,30 @@ const TrackingPage = () => {
 
         socket.emit('join', userId);
 
-        socket.on('ride_picked_up', (updatedRide) => {
+        const onRidePickedUp = (updatedRide) => {
             setBooking(updatedRide);
-        });
+        };
 
-        socket.on('ride_completed', () => {
+        const onRideCompleted = () => {
             alert('Ride completed! Hope you enjoyed your journey.');
             navigate('/bookings');
-        });
+        };
 
-        socket.on('ride_cancelled', () => {
+        const onRideCancelled = () => {
             alert('Your ride was cancelled.');
             navigate('/');
-        });
+        };
+
+        socket.on('ride_picked_up', onRidePickedUp);
+        socket.on('ride_completed', onRideCompleted);
+        socket.on('ride_cancelled', onRideCancelled);
 
         return () => {
-            socket.off('ride_picked_up');
-            socket.off('ride_completed');
-            socket.off('ride_cancelled');
+            socket.off('ride_picked_up', onRidePickedUp);
+            socket.off('ride_completed', onRideCompleted);
+            socket.off('ride_cancelled', onRideCancelled);
         };
-    }, [navigate, booking]);
+    }, [navigate]);
 
     const handleCancel = async () => {
         if (!window.confirm('Are you sure you want to cancel this ride?')) return;

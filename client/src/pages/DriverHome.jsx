@@ -53,11 +53,9 @@ const DriverHome = () => {
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 5000);
         window.addEventListener('refresh_driver_ride', fetchData);
 
         return () => {
-            clearInterval(interval);
             window.removeEventListener('refresh_driver_ride', fetchData);
         };
     }, []);
@@ -68,37 +66,42 @@ const DriverHome = () => {
         joinRoom();
         socket.on('connect', joinRoom);
 
-        socket.on('new_ride_request', (ride) => {
+        const onNewRideRequest = (ride) => {
             if (online && !activeRide) {
                 console.log('[SOCKET] Received new ride request:', ride._id);
                 setPendingRides(prev => [ride, ...prev.filter(r => r._id !== ride._id)]);
             }
-        });
+        };
 
-        socket.on('ride_accepted', (ride) => {
+        const onRideAccepted = (ride) => {
             setPendingRides(prev => prev.filter(r => r._id !== ride._id));
             if (ride.driverId?._id === userId || ride.driverId === userId) {
                 setActiveRide(ride);
                 setPendingRides([]);
             }
-        });
+        };
 
-        socket.on('ride_cancelled', (ride) => {
+        const onRideCancelled = (ride) => {
             setPendingRides(prev => prev.filter(r => r._id !== ride._id));
             if (activeRide?._id === ride._id) setActiveRide(null);
-        });
+        };
 
-        socket.on('ride_completed', () => {
+        const onRideCompleted = () => {
             setActiveRide(null);
             fetchData();
-        });
+        };
+
+        socket.on('new_ride_request', onNewRideRequest);
+        socket.on('ride_accepted', onRideAccepted);
+        socket.on('ride_cancelled', onRideCancelled);
+        socket.on('ride_completed', onRideCompleted);
 
         return () => {
-            socket.off('new_ride_request');
-            socket.off('ride_accepted');
-            socket.off('ride_cancelled');
-            socket.off('ride_completed');
-            socket.off('connect');
+            socket.off('new_ride_request', onNewRideRequest);
+            socket.off('ride_accepted', onRideAccepted);
+            socket.off('ride_cancelled', onRideCancelled);
+            socket.off('ride_completed', onRideCompleted);
+            socket.off('connect', joinRoom);
         };
     }, [online, activeRide]);
 

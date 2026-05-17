@@ -15,6 +15,7 @@ const DriverLocationSchema = new mongoose.Schema({
 });
 
 // Create geospatial index for nearby search
-DriverLocationSchema.index({ location: '2dsphere' });
+DriverLocationSchema.index({ location: '2dsphere', isOnline: 1 });
+DriverLocationSchema.index({ driverId: 1 });
 
 module.exports = mongoose.model('DriverLocation', DriverLocationSchema);
