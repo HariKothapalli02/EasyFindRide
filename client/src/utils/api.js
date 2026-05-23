@@ -16,5 +16,20 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Handle expired or invalid tokens globally
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            const msg = error.response.data?.msg;
+            if (msg === 'Token is not valid' || msg === 'No token, authorization denied') {
+                localStorage.clear();
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const socket = io(API_URL);
 export default api;
