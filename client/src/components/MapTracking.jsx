@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -42,6 +42,39 @@ export const driverIcon = L.divIcon({
     iconAnchor: [15, 15]
 });
 
+const RecenterControl = ({ center }) => {
+    const map = useMap();
+    
+    const handleRecenter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (center) {
+            map.setView(center, 16, { animate: true });
+        }
+    };
+
+    return (
+        <div className="absolute bottom-6 right-6 z-[1000]">
+            <button
+                type="button"
+                onClick={handleRecenter}
+                className="w-12 h-12 bg-white/95 backdrop-blur-sm border border-black/5 rounded-full flex items-center justify-center text-orange shadow-lg hover:bg-orange hover:text-white transition-all active:scale-95 duration-300 cursor-pointer"
+                style={{ outline: 'none' }}
+                title="Recenter Map"
+            >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="3" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                </svg>
+            </button>
+        </div>
+    );
+};
+
 const MapTracking = ({ center = [17.3850, 78.4867], zoom = 13, children, style }) => {
     return (
         <div style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}>
@@ -56,6 +89,7 @@ const MapTracking = ({ center = [17.3850, 78.4867], zoom = 13, children, style }
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
                 {children}
+                <RecenterControl center={center} />
             </MapContainer>
         </div>
     );
