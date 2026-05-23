@@ -197,6 +197,26 @@ const AdminHome = () => {
         }
     };
 
+    const handleRemoveRestriction = async (userId) => {
+        if (!window.confirm('Are you sure you want to remove all restriction levels, clear warnings, and reset the fraud risk index for this account?')) return;
+        try {
+            setIsActionLoading(true);
+            const token = localStorage.getItem('token');
+            const headers = { 'x-auth-token': token };
+            const res = await api.post('/admin/remove-restriction', { userId }, { headers });
+            alert(res.data.msg);
+            fetchFraudData();
+            fetchData();
+            setSelectedRider(null);
+            setSelectedDriver(null);
+        } catch (e) {
+            console.error('Failed to remove restriction:', e);
+            alert(e.response?.data?.msg || 'Error occurred');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
     const handleLogout = () => {
         localStorage.clear();
         navigate('/login');
@@ -500,6 +520,113 @@ const AdminHome = () => {
                                                 <div className="text-[9px] font-black text-[#888] uppercase tracking-wider mb-0.5">Rider Details</div>
                                                 <h3 className="font-heading text-3xl leading-none text-black mb-1">{selectedRider.name}</h3>
                                                 <div className="text-xs font-bold text-purple-600">{selectedRider.phone} • {selectedRider.email} • Hyderabad</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Account Health & Restrictions Override */}
+                                        <div className="bg-white rounded-3xl p-5 border border-black/5 shadow-sm space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center text-orange shrink-0">
+                                                    <ShieldAlert size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-black text-[#888] uppercase tracking-wider">Security & Account Health</div>
+                                                    <h4 className="font-heading text-lg text-black">Limits & Enforcement Details</h4>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                <div className="bg-grayBg p-3 rounded-2xl border border-black/5">
+                                                    <div className="text-[10px] font-black text-[#888] uppercase">Restriction Level</div>
+                                                    <div className="mt-1 font-heading text-sm text-black flex items-center gap-1.5">
+                                                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                                            selectedRider.restrictionLevel === 'Normal' ? 'bg-green-500' :
+                                                            selectedRider.restrictionLevel === 'Warning' ? 'bg-yellow-500' :
+                                                            selectedRider.restrictionLevel === 'Restricted' ? 'bg-orange' :
+                                                            'bg-red-500'
+                                                        }`} />
+                                                        {selectedRider.restrictionLevel || 'Normal'}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-grayBg p-3 rounded-2xl border border-black/5">
+                                                    <div className="text-[10px] font-black text-[#888] uppercase">Fraud Risk Score</div>
+                                                    <div className="mt-1 font-heading text-sm text-orange">
+                                                        {selectedRider.customerFraudScore || 0} / 100
+                                                    </div>
+                                                </div>
+                                                <div className="bg-grayBg p-3 rounded-2xl border border-black/5">
+                                                    <div className="text-[10px] font-black text-[#888] uppercase">Unpaid Dues</div>
+                                                    <div className="mt-1 font-heading text-sm text-red-500">
+                                                        ₹{selectedRider.unpaidPenaltyAmount || 0}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-grayBg p-3 rounded-2xl border border-black/5">
+                                                    <div className="text-[10px] font-black text-[#888] uppercase">Cancels / No-shows</div>
+                                                    <div className="mt-1 font-heading text-sm text-black">
+                                                        {selectedRider.cancellationCount || 0}C / {selectedRider.noShowCount || 0}N
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2.5 pt-1">
+                                                <button
+                                                    onClick={() => handleRemoveRestriction(selectedRider._id)}
+                                                    disabled={isActionLoading}
+                                                    className="px-5 py-3 bg-black hover:bg-orange text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 active:scale-95 flex items-center gap-2"
+                                                >
+                                                    <Activity size={14} />
+                                                    Reset Limits & Health
+                                                </button>
+
+                                                {selectedRider.isFrozen ? (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!window.confirm('Unfreeze this account?')) return;
+                                                            try {
+                                                                setIsActionLoading(true);
+                                                                const token = localStorage.getItem('token');
+                                                                const headers = { 'x-auth-token': token };
+                                                                const res = await api.post('/admin/freeze-account', { userId: selectedRider._id, isFrozen: false }, { headers });
+                                                                alert(res.data.msg);
+                                                                fetchFraudData();
+                                                                fetchData();
+                                                                setSelectedRider(null);
+                                                            } catch (e) {
+                                                                alert(e.response?.data?.msg || 'Error unfreezing user');
+                                                            } finally {
+                                                                setIsActionLoading(false);
+                                                            }
+                                                        }}
+                                                        disabled={isActionLoading}
+                                                        className="px-5 py-3 bg-green-500/10 text-green-600 hover:bg-green-500 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 active:scale-95"
+                                                    >
+                                                        Unfreeze Account
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!window.confirm('Are you sure you want to freeze this user? They will be locked out of booking rides.')) return;
+                                                            try {
+                                                                setIsActionLoading(true);
+                                                                const token = localStorage.getItem('token');
+                                                                const headers = { 'x-auth-token': token };
+                                                                const res = await api.post('/admin/freeze-account', { userId: selectedRider._id, isFrozen: true }, { headers });
+                                                                alert(res.data.msg);
+                                                                fetchFraudData();
+                                                                fetchData();
+                                                                setSelectedRider(null);
+                                                            } catch (e) {
+                                                                alert(e.response?.data?.msg || 'Error freezing user');
+                                                            } finally {
+                                                                setIsActionLoading(false);
+                                                            }
+                                                        }}
+                                                        disabled={isActionLoading}
+                                                        className="px-5 py-3 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all disabled:opacity-50 active:scale-95"
+                                                    >
+                                                        Freeze Account
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 

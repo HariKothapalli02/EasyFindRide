@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, Shield, User, Wallet } from 'lucide-react';
+import { Home, ClipboardList, ShieldAlert, User, Wallet } from 'lucide-react';
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const BottomNav = () => {
   ] : [
     { id: 'navHome', icon: Home, label: 'Home', path: '/' },
     { id: 'navBookings', icon: ClipboardList, label: 'My Bookings', path: '/bookings' },
-    { id: 'navSupport', icon: Shield, label: 'Support', path: '/support' },
+    { id: 'navRestrictions', icon: ShieldAlert, label: 'Limits & Safety', path: '/restrictions' },
     { id: 'navProfile', icon: User, label: 'Profile', path: '/profile' },
   ];
 

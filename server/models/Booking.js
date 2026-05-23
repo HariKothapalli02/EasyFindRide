@@ -34,6 +34,7 @@ const BookingSchema = new mongoose.Schema({
     weatherCondition: { type: String, default: 'Normal' },
     isSurgeActive: { type: Boolean, default: false },
     cancellationCompensated: { type: Boolean, default: false },
+    fraudFlag: { type: Boolean, default: false },
 
     date: { type: Date, default: Date.now }
 });

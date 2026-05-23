@@ -33,6 +33,17 @@ const UserSchema = new mongoose.Schema({
     isFrozen: { type: Boolean, default: false },
     cancellationsToday: { type: Number, default: 0 },
     lastCancellationReset: { type: Date, default: Date.now },
+    
+    // Customer Specific Penalty & Restrictions System
+    restrictionLevel: { 
+        type: String, 
+        enum: ['Normal', 'Warning', 'Restricted', 'Cooldown', 'Blocked'], 
+        default: 'Normal' 
+    },
+    suspensionStatus: { type: Boolean, default: false },
+    unpaidPenaltyAmount: { type: Number, default: 0 },
+    cancellationCount: { type: Number, default: 0 },
+    noShowCount: { type: Number, default: 0 },
 
     // Wallet Dues
     walletBalance: { type: Number, default: 0 },

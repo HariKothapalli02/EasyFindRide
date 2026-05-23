@@ -227,7 +227,16 @@ const HomePage = () => {
             setShowSearchModal(true);
         } catch (err) {
             console.error(err);
-            alert('Error booking ride');
+            const errMsg = err.response?.data?.msg || err.message || '';
+            if (errMsg.includes('UNPAID_DUES') || errMsg.includes('BOOKING_COOLDOWN') || errMsg.includes('BOOKING_LOCKED')) {
+                // Parse the display message
+                const displayMsg = errMsg.includes(':') ? errMsg.split(':')[1].trim() : errMsg;
+                if (window.confirm(`${displayMsg}\n\nWould you like to open the 'Limits & Safety' dashboard now to review your status or settle dues?`)) {
+                    navigate('/restrictions');
+                }
+            } else {
+                alert(errMsg || 'Error booking ride');
+            }
         }
     };
 

@@ -6,6 +6,7 @@ const User = require('../models/User');
 const DriverLocation = require('../models/DriverLocation');
 const loyaltyService = require('../services/loyaltyService');
 const referralService = require('../services/referralService');
+const penaltyService = require('../services/penaltyService');
 
 // Middleware to verify JWT
 const auth = (req, res, next) => {
@@ -110,6 +111,13 @@ router.get('/history', auth, async (req, res) => {
 // Book a Ride (Notify Drivers)
 router.post('/book', auth, async (req, res) => {
     try {
+        // Validate Booking Permissions & Penalty Restrictions
+        try {
+            await penaltyService.validateBookingAttempt(req.user.id);
+        } catch (validationErr) {
+            return res.status(403).json({ msg: validationErr.message });
+        }
+
         const { pickup, drop, vehicleType, price, city, pickupCoords, dropCoords } = req.body;
         // Standardize everything
         const standardizedCity = (city || pickup.split(',')[0]).toLowerCase().trim();

@@ -265,6 +265,36 @@ router.post('/blacklist-device', adminAuth, async (req, res) => {
     }
 });
 
+// POST: Reset user restriction levels and clear fraud/abuse scores
+router.post('/remove-restriction', adminAuth, async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ msg: 'User ID is required' });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        user.restrictionLevel = 'Normal';
+        user.suspensionStatus = false;
+        user.isFrozen = false;
+        user.customerFraudScore = 0;
+        user.driverFraudScore = 0;
+        user.referralFraudScore = 0;
+        user.cancellationCount = 0;
+        user.noShowCount = 0;
+
+        await user.save();
+
+        res.json({
+            msg: `Successfully removed all restrictions and reset security score tracking for ${user.name}.`,
+            user
+        });
+    } catch (err) {
+        console.error('Remove restriction error:', err);
+        res.status(500).send('Server error');
+    }
+});
+
 const FraudLog = require('../models/FraudLog');
 
 module.exports = router;
