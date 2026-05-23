@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
-import { MapPin, ArrowRight, ShieldCheck, Clock, Wallet, Navigation, Phone, ChevronRight, Loader2, Star, ArrowUpDown } from 'lucide-react';
+import { MapPin, ArrowRight, ShieldCheck, Clock, Wallet, Navigation, Phone, ChevronRight, Loader2, Star, ArrowUpDown, Users } from 'lucide-react';
 import api, { socket } from '../utils/api';
 import { geocode, searchLocations, getRoute, reverseGeocode } from '../utils/osrmService';
 import useLiveLocation from '../hooks/useLiveLocation';
@@ -10,6 +10,7 @@ import RoutePolyline from '../components/RoutePolyline';
 import { Marker, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import DriverHome from './DriverHome';
+import AdminHome from './AdminHome';
 
 const AutoCenter = ({ points }) => {
     const map = useMap();
@@ -30,6 +31,10 @@ const HomePage = () => {
 
     if (userRole === 'driver') {
         return <DriverHome />;
+    }
+
+    if (userRole === 'admin') {
+        return <AdminHome />;
     }
 
     const [pickup, setPickup] = useState('');
@@ -560,6 +565,31 @@ const HomePage = () => {
                                     <div className="absolute inset-0 border-2 border-transparent group-hover:border-orange/10 rounded-[24px] pointer-events-none" />
                                 </div>
                             ))}
+
+                            {/* Cab Pool Option */}
+                            <div 
+                                onClick={() => navigate('/pool/search', { state: { pickup, pickupCoords, drop, dropCoords } })} 
+                                className="relative flex items-center justify-between p-4 bg-white border border-black/5 rounded-[24px] hover:border-green-500/30 hover:bg-green-500/5 transition-all cursor-pointer active:scale-[0.98] group overflow-hidden mt-4"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white bg-green-500 shadow-md shadow-green-500/20 transition-transform duration-300 group-hover:scale-105">
+                                        <Users size={24} />
+                                    </div>
+                                    <div>
+                                        <div className="font-heading text-xl text-black">CAB POOL</div>
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#888] uppercase">
+                                            <div className="w-1 h-1 rounded-full bg-green-500" />
+                                            Shared Ride
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-heading text-xl text-green-500 mb-0.5">Save 35%</div>
+                                    <div className="text-[8px] font-black text-black/30 uppercase tracking-tighter">Cheapest</div>
+                                </div>
+                                <div className="absolute inset-0 border-2 border-transparent group-hover:border-green-500/20 rounded-[24px] pointer-events-none" />
+                            </div>
+
                         </div>
                     </div>
                 </div>

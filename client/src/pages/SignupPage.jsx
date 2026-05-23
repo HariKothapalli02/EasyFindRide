@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
-import { User, Shield, Bike, Car, Mail, Lock, Smartphone, ArrowLeft, ArrowRight } from 'lucide-react';
+import { User, Shield, Bike, Car, Mail, Lock, Smartphone, ArrowLeft, ArrowRight, Settings } from 'lucide-react';
 
 const SignupPage = () => {
     const [role, setRole] = useState('customer');
@@ -28,6 +28,7 @@ const SignupPage = () => {
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('userRole', res.data.user.role);
             localStorage.setItem('userId', res.data.user.id);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
             navigate('/');
         } catch (err) {
             alert(err.response?.data?.msg || 'Signup failed');
@@ -49,24 +50,36 @@ const SignupPage = () => {
 
             <div className="flex-1 px-8 pb-12 overflow-y-auto custom-scrollbar">
                 {/* ROLE SELECTION */}
-                <div className="flex gap-4 mb-8">
+                <div className="flex gap-3 mb-8">
                     <button 
+                        type="button"
                         onClick={() => setRole('customer')}
-                        className={`flex-1 p-5 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 ${role === 'customer' ? 'border-orange bg-orange shadow-[0_15px_30px_rgba(255,95,0,0.15)] text-white' : 'border-black/5 bg-grayBg text-[#888]'}`}
+                        className={`flex-1 p-4 rounded-[24px] border-2 transition-all flex flex-col items-center gap-2 ${role === 'customer' ? 'border-orange bg-orange shadow-[0_15px_30px_rgba(255,95,0,0.15)] text-white' : 'border-black/5 bg-grayBg text-[#888]'}`}
                     >
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${role === 'customer' ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
-                            <User size={24} />
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${role === 'customer' ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+                            <User size={20} />
                         </div>
-                        <span className="font-black text-[10px] uppercase tracking-widest">Customer</span>
+                        <span className="font-black text-[9px] uppercase tracking-wider">Customer</span>
                     </button>
                     <button 
+                        type="button"
                         onClick={() => setRole('driver')}
-                        className={`flex-1 p-5 rounded-[28px] border-2 transition-all flex flex-col items-center gap-3 ${role === 'driver' ? 'border-black bg-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] text-white' : 'border-black/5 bg-grayBg text-[#888]'}`}
+                        className={`flex-1 p-4 rounded-[24px] border-2 transition-all flex flex-col items-center gap-2 ${role === 'driver' ? 'border-black bg-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] text-white' : 'border-black/5 bg-grayBg text-[#888]'}`}
                     >
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${role === 'driver' ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
-                            <Shield size={24} />
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${role === 'driver' ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+                            <Shield size={20} />
                         </div>
-                        <span className="font-black text-[10px] uppercase tracking-widest">Driver</span>
+                        <span className="font-black text-[9px] uppercase tracking-wider">Driver</span>
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setRole('admin')}
+                        className={`flex-1 p-4 rounded-[24px] border-2 transition-all flex flex-col items-center gap-2 ${role === 'admin' ? 'border-purple-600 bg-purple-600 shadow-[0_15px_30px_rgba(147,51,234,0.15)] text-white' : 'border-black/5 bg-grayBg text-[#888]'}`}
+                    >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${role === 'admin' ? 'bg-white/20' : 'bg-white shadow-sm'}`}>
+                            <Settings size={20} />
+                        </div>
+                        <span className="font-black text-[9px] uppercase tracking-wider">Admin</span>
                     </button>
                 </div>
 
@@ -181,7 +194,7 @@ const SignupPage = () => {
                     <button 
                         type="submit"
                         disabled={loading}
-                        className={`w-full text-white font-heading text-2xl py-5 rounded-[24px] shadow-2xl transition-all active:scale-[0.98] mt-6 flex items-center justify-center gap-3 ${role === 'customer' ? 'bg-orange hover:bg-orange-dark shadow-orange/20' : 'bg-black hover:bg-zinc-800 shadow-black/20'}`}
+                        className={`w-full text-white font-heading text-2xl py-5 rounded-[24px] shadow-2xl transition-all active:scale-[0.98] mt-6 flex items-center justify-center gap-3 ${role === 'customer' ? 'bg-orange hover:bg-orange-dark shadow-orange/20' : role === 'admin' ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20' : 'bg-black hover:bg-zinc-800 shadow-black/20'}`}
                     >
                         {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
                         {!loading && <ArrowRight size={20} />}

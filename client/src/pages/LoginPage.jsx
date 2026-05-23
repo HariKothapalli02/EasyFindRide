@@ -17,6 +17,7 @@ const LoginPage = () => {
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('userRole', res.data.user.role);
             localStorage.setItem('userId', res.data.user.id);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
             navigate('/');
         } catch (err) {
             alert(err.response?.data?.msg || 'Login failed');

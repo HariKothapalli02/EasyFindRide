@@ -52,6 +52,22 @@ io.on('connection', (socket) => {
         console.log(`Socket ${socket.id} started tracking ride ${rideId}`);
     });
 
+    // --- Cab Pool Sockets ---
+    socket.on('poolRide:join', (poolRideId) => {
+        socket.join(`poolRide:${poolRideId}`);
+        console.log(`Socket ${socket.id} joined poolRide room ${poolRideId}`);
+    });
+
+    socket.on('poolRide:location:update', (data) => {
+        const { poolRideId, driverId, lat, lng } = data;
+        io.to(`poolRide:${poolRideId}`).emit('poolRide:driverLocation', {
+            driverId,
+            lat,
+            lng,
+            timestamp: new Date()
+        });
+    });
+
     socket.on('disconnect', () => {
         userSockets.forEach((value, key) => {
             if (value === socket.id) userSockets.delete(key);
@@ -88,9 +104,15 @@ app.use(async (req, res, next) => {
 // Routes
 const authRoutes = require('./routes/auth');
 const rideRoutes = require('./routes/rides');
+const poolRideRoutes = require('./routes/poolRideRoutes');
+const adminRoutes = require('./routes/admin');
+const reviewsRoutes = require('./routes/reviews');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
+app.use('/api/pool-rides', poolRideRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', reviewsRoutes);
 
 // Export the app for Vercel
 module.exports = app;

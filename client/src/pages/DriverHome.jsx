@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
-import { MapPin, Navigation, Phone, ShieldCheck, Clock } from 'lucide-react';
+import { MapPin, Navigation, Phone, ShieldCheck, Clock, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api, { socket } from '../utils/api';
 import DriverLiveTracker from '../components/DriverLiveTracker';
 import DriverRideMap from '../components/DriverRideMap';
@@ -13,11 +14,41 @@ const DriverHome = () => {
     const [pendingRides, setPendingRides] = useState([]);
     const [online, setOnline] = useState(true);
     const [city, setCity] = useState(localStorage.getItem('driverCity') || 'Detecting...');
+    
+    const [userContext, setUserContext] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+    const isCabDriver = ['cab', 'car'].includes(userContext.vehicleType?.toLowerCase());
+
+    const toggleOnlineStatus = async () => {
+        try {
+            const nextOnline = !online;
+            setOnline(nextOnline);
+            const res = await api.post('/auth/toggle-online', { isOnline: nextOnline });
+            if (res.data?.user) {
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+                setUserContext(res.data.user);
+            }
+        } catch (err) {
+            console.error('Failed to toggle online status:', err);
+            setOnline(online); // Revert state on failure
+        }
+    };
 
     const fetchData = async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
+
+            // Always fetch the latest profile to sync online status and vehicleType
+            try {
+                const profileRes = await api.get('/auth/profile');
+                if (profileRes.data) {
+                    localStorage.setItem('user', JSON.stringify(profileRes.data));
+                    setUserContext(profileRes.data);
+                    setOnline(profileRes.data.isOnline);
+                }
+            } catch (e) {
+                console.error('Failed to fetch profile', e);
+            }
             
             const activeRes = await api.get('/rides/active');
             
@@ -159,7 +190,7 @@ const DriverHome = () => {
                         <p className="text-[#888] font-bold text-sm">You are currently {online ? 'Online' : 'Offline'}</p>
                     </div>
                     <button 
-                        onClick={() => setOnline(!online)}
+                        onClick={toggleOnlineStatus}
                         className={`w-16 h-8 rounded-full relative transition-all duration-300 ${online ? 'bg-orange shadow-lg shadow-orange/20' : 'bg-black/10'}`}
                     >
                         <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 ${online ? 'right-1' : 'left-1'}`} />
@@ -183,6 +214,25 @@ const DriverHome = () => {
                         </div>
                     </div>
                 </div>
+
+                {isCabDriver && !activeRide && (
+                    <div className="mb-8">
+                        <Link to="/pool/create" className="block w-full bg-blue-600 text-white p-5 rounded-[32px] shadow-md hover:bg-blue-700 transition-all active:scale-95 border border-blue-500">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Users size={20} />
+                                        <h3 className="font-heading text-2xl uppercase tracking-wider">Start Cab Pool</h3>
+                                    </div>
+                                    <p className="text-sm font-bold text-white/80">Share your route & maximize earnings</p>
+                                </div>
+                                <div className="bg-white/20 p-3 rounded-full">
+                                    <Navigation size={24} />
+                                </div>
+                            </div>
+                        </Link>
+                    </div>
+                )}
 
                 {activeRide && (
                     <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden shadow-inner shrink-0 rounded-[32px] mb-8 border border-black/5">

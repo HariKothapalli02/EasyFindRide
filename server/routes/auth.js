@@ -30,7 +30,7 @@ router.post('/signup', async (req, res) => {
         const payload = { user: { id: user.id } };
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 36000 }, (err, token) => {
             if (err) throw err;
-            res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } });
+            res.json({ token, user: { _id: user.id, id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, vehicleType: user.vehicleType } });
         });
     } catch (err) {
         console.error(err.message);
@@ -52,7 +52,7 @@ router.post('/login', async (req, res) => {
         const payload = { user: { id: user.id } };
         jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 36000 }, (err, token) => {
             if (err) throw err;
-            res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } });
+            res.json({ token, user: { _id: user.id, id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, vehicleType: user.vehicleType } });
         });
     } catch (err) {
         console.error(err.message);
@@ -86,6 +86,28 @@ router.post('/update-city', async (req, res) => {
         await User.findByIdAndUpdate(decoded.user.id, { city });
         res.json({ msg: 'City updated successfully' });
     } catch (err) {
+        res.status(500).send('Server error');
+    }
+});
+
+// Update Driver Online Status
+router.post('/toggle-online', async (req, res) => {
+    try {
+        const token = req.header('x-auth-token');
+        if (!token) return res.status(401).json({ msg: 'No token, authorization denied' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { isOnline } = req.body;
+        
+        const user = await User.findByIdAndUpdate(
+            decoded.user.id, 
+            { isOnline }, 
+            { new: true }
+        ).select('-password');
+        
+        res.json({ msg: 'Online status updated successfully', user });
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server error');
     }
 });
