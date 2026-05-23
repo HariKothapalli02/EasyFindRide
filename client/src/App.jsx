@@ -6,6 +6,7 @@ import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
 import BookingsPage from './pages/BookingsPage';
 import SupportPage from './pages/SupportPage';
+import WalletPage from './pages/WalletPage';
 import TrackingPage from './pages/TrackingPage';
 import CabPoolDetails from './pages/CabPoolDetails';
 import CabPoolTracking from './pages/CabPoolTracking';
@@ -64,6 +65,7 @@ function App() {
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute><SupportPage /></ProtectedRoute>} />
+          <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
           <Route path="/tracking" element={<ProtectedRoute><TrackingPage /></ProtectedRoute>} />
           <Route path="/pool/create" element={<ProtectedRoute><DriverCreatePoolRide /></ProtectedRoute>} />
           <Route path="/pool/search" element={<ProtectedRoute><CabPoolDetails /></ProtectedRoute>} />

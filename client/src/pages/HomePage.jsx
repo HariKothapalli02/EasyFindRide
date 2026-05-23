@@ -177,9 +177,13 @@ const HomePage = () => {
         }
         try {
             const address = await reverseGeocode(currentLoc.lat, currentLoc.lng, true);
+            const cityName = await reverseGeocode(currentLoc.lat, currentLoc.lng, false);
             if (address) {
                 setPickup(address);
                 setPickupCoords({ lat: currentLoc.lat, lng: currentLoc.lng });
+                if (cityName) {
+                    setCity(cityName);
+                }
             }
         } catch (err) {
             console.error('Error getting current location address:', err);
@@ -189,7 +193,18 @@ const HomePage = () => {
     const bookRide = async (v) => {
         try {
             const token = localStorage.getItem('token');
-            const bookingCity = city.trim() || 'Hyderabad';
+            
+            // Resolve most accurate city from coordinates address details
+            let bookingCity = city;
+            if (pickupCoords && pickupCoords.address) {
+                const addr = pickupCoords.address;
+                bookingCity = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || bookingCity;
+            } else if (dropCoords && dropCoords.address) {
+                const addr = dropCoords.address;
+                bookingCity = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || bookingCity;
+            }
+            
+            const bookingCityFinal = (bookingCity || 'Hyderabad').trim();
             
             const res = await api.post('/rides/book', {
                 pickup,
@@ -198,7 +213,7 @@ const HomePage = () => {
                 dropCoords,
                 vehicleType: v.type,
                 price: v.price,
-                city: bookingCity
+                city: bookingCityFinal
             }, {
                 headers: { 'x-auth-token': token }
             });
@@ -331,10 +346,12 @@ const HomePage = () => {
                                     setPickup(s.display_name); 
                                     setPickupCoords(s); 
                                     setPickupSuggestions([]);
-                                    // Extract city/town from display_name (usually the second or third part)
-                                    const parts = s.display_name.split(',');
-                                    if (parts.length > 0) {
-                                        setCity(parts[0].trim());
+                                    
+                                    // Resolve exact city or town from selected coordinates
+                                    const addr = s.address || {};
+                                    const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || (s.display_name.split(',')[0] || '').trim();
+                                    if (cityName) {
+                                        setCity(cityName);
                                     }
                                 }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
                                     {s.display_name}
@@ -367,7 +384,18 @@ const HomePage = () => {
                     {dropSuggestions.length > 0 && (
                         <div className="absolute top-full left-0 right-0 z-[1000] bg-white border border-black/5 rounded-2xl mt-1 shadow-2xl overflow-hidden animate-slide-down">
                             {dropSuggestions.map((s, i) => (
-                                <div key={i} onClick={() => { setDrop(s.display_name); setDropCoords(s); setDropSuggestions([]); }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
+                                <div key={i} onClick={() => { 
+                                    setDrop(s.display_name); 
+                                    setDropCoords(s); 
+                                    setDropSuggestions([]);
+                                    
+                                    // Resolve exact city or town from selected coordinates
+                                    const addr = s.address || {};
+                                    const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.suburb || addr.county || (s.display_name.split(',')[0] || '').trim();
+                                    if (cityName) {
+                                        setCity(cityName);
+                                    }
+                                }} className="px-5 py-3 hover:bg-orange/5 cursor-pointer font-bold text-sm border-b border-black/5 last:border-0 transition-colors">
                                     {s.display_name}
                                 </div>
                             ))}

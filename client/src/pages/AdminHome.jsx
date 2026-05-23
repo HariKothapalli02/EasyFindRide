@@ -33,17 +33,26 @@ const AdminHome = () => {
     const [drivers, setDrivers] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [reviews, setReviews] = useState([]);
+    const [flaggedUsers, setFlaggedUsers] = useState([]);
+    const [fraudLogs, setFraudLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Selection details
     const [selectedRider, setSelectedRider] = useState(null);
     const [selectedDriver, setSelectedDriver] = useState(null);
     const [trackingRide, setTrackingRide] = useState(null);
+    const [adjustingUser, setAdjustingUser] = useState(null);
     
     // Search filters
     const [riderSearch, setRiderSearch] = useState('');
     const [driverSearch, setDriverSearch] = useState('');
     const [rideSearch, setRideSearch] = useState('');
+
+    // Admin action form states
+    const [walletAdjAmount, setWalletAdjAmount] = useState('');
+    const [pointsAdjAmount, setPointsAdjAmount] = useState('');
+    const [adjReason, setAdjReason] = useState('');
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
@@ -69,13 +78,124 @@ const AdminHome = () => {
         }
     };
 
+    const fetchFraudData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'x-auth-token': token };
+            const res = await api.get('/admin/fraud/flagged-accounts', { headers });
+            if (res.data) {
+                setFlaggedUsers(res.data.users || []);
+                setFraudLogs(res.data.logs || []);
+            }
+        } catch (e) {
+            console.error('Failed to fetch fraud details:', e);
+        }
+    };
+
     useEffect(() => {
         fetchData();
         
         // Setup polling for live updates
-        const interval = setInterval(fetchData, 30000);
+        const interval = setInterval(() => {
+            fetchData();
+            if (activeTab === 'fraud') {
+                fetchFraudData();
+            }
+        }, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'fraud') {
+            fetchFraudData();
+        }
+    }, [activeTab]);
+
+    const handleFreezeAccount = async (userId, currentStatus) => {
+        try {
+            setIsActionLoading(true);
+            const token = localStorage.getItem('token');
+            const headers = { 'x-auth-token': token };
+            const res = await api.post('/admin/freeze-account', { userId, isFrozen: !currentStatus }, { headers });
+            alert(res.data.msg);
+            fetchFraudData();
+            fetchData();
+        } catch (e) {
+            console.error('Failed to freeze/unfreeze account:', e);
+            alert(e.response?.data?.msg || 'Error occurred');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleWalletAdjustment = async (e) => {
+        e.preventDefault();
+        if (!adjustingUser || !walletAdjAmount) return;
+        try {
+            setIsActionLoading(true);
+            const token = localStorage.getItem('token');
+            const headers = { 'x-auth-token': token };
+            const res = await api.post('/admin/reverse-penalty', {
+                userId: adjustingUser._id,
+                amount: Number(walletAdjAmount),
+                reason: adjReason || 'Manual adjustment'
+            }, { headers });
+            alert(res.data.msg);
+            setWalletAdjAmount('');
+            setAdjReason('');
+            setAdjustingUser(null);
+            fetchFraudData();
+            fetchData();
+        } catch (e) {
+            console.error('Failed to adjust wallet:', e);
+            alert(e.response?.data?.msg || 'Error adjusting wallet balance');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handlePointsAdjustment = async (e) => {
+        e.preventDefault();
+        if (!adjustingUser || !pointsAdjAmount) return;
+        try {
+            setIsActionLoading(true);
+            const token = localStorage.getItem('token');
+            const headers = { 'x-auth-token': token };
+            const res = await api.post('/admin/manually-adjust-points', {
+                userId: adjustingUser._id,
+                pointsDelta: Number(pointsAdjAmount)
+            }, { headers });
+            alert(res.data.msg);
+            setPointsAdjAmount('');
+            setAdjustingUser(null);
+            fetchFraudData();
+            fetchData();
+        } catch (e) {
+            console.error('Failed to adjust points:', e);
+            alert(e.response?.data?.msg || 'Error adjusting loyalty points');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleBlacklistDevice = async (deviceFingerprint) => {
+        if (!deviceFingerprint) return;
+        if (!window.confirm(`Are you sure you want to blacklist device footprint "${deviceFingerprint}"? All matching and future accounts logged on this device will be frozen immediately.`)) return;
+        try {
+            setIsActionLoading(true);
+            const token = localStorage.getItem('token');
+            const headers = { 'x-auth-token': token };
+            const res = await api.post('/admin/blacklist-device', { deviceFingerprint }, { headers });
+            alert(res.data.msg);
+            fetchFraudData();
+            fetchData();
+        } catch (e) {
+            console.error('Failed to blacklist device:', e);
+            alert(e.response?.data?.msg || 'Error blacklisting device');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.clear();
@@ -205,6 +325,7 @@ const AdminHome = () => {
                             { id: 'riders', label: 'Riders & Users', icon: Users },
                             { id: 'drivers', label: 'Drivers & Reviews', icon: Car },
                             { id: 'rides', label: 'Ride Tracker', icon: MapPin },
+                            { id: 'fraud', label: 'Fraud Command Center', icon: ShieldAlert },
                             { id: 'mailbox', label: 'Mailbox', icon: Mail }
                         ].map(tab => (
                             <button
@@ -213,6 +334,7 @@ const AdminHome = () => {
                                     setActiveTab(tab.id);
                                     setSelectedRider(null);
                                     setSelectedDriver(null);
+                                    setAdjustingUser(null);
                                 }}
                                 className={`flex items-center gap-3.5 px-5 py-4 rounded-[20px] font-heading text-lg tracking-wide transition-all shrink-0 w-full ${
                                     activeTab === tab.id 
@@ -697,9 +819,268 @@ const AdminHome = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* FRAUD COMMAND CENTER TAB */}
+                        {!loading && activeTab === 'fraud' && (
+                            <div className="space-y-6">
+                                {/* Welcome Panel */}
+                                <div className="bg-white rounded-3xl p-8 border border-black/5 shadow-sm relative overflow-hidden">
+                                    <div className="absolute top-[-20%] right-[-10%] w-[200px] h-[200px] bg-red-500/5 rounded-full blur-2xl" />
+                                    <h2 className="font-heading text-3xl mb-2 text-black flex items-center gap-3">
+                                        <ShieldAlert size={28} className="text-red-500" />
+                                        FRAUD SURVEILLANCE & COMMAND
+                                    </h2>
+                                    <p className="text-[#888] font-bold text-sm leading-relaxed max-w-2xl">
+                                        Surveillance system monitoring GPS spoofing speed violations, referral loop farming, sandbox emulator signatures, and hardware device footprints in real-time.
+                                    </p>
+                                </div>
+
+                                {/* Fraud stats banner */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between">
+                                        <div>
+                                            <div className="text-[10px] font-black text-[#888] uppercase tracking-wider">Flagged/Under Review</div>
+                                            <div className="font-heading text-3xl text-orange mt-1">{flaggedUsers.length} Users</div>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-xl bg-orange/10 flex items-center justify-center text-orange"><Users size={20} /></div>
+                                    </div>
+                                    <div className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between">
+                                        <div>
+                                            <div className="text-[10px] font-black text-[#888] uppercase tracking-wider">Actively Frozen Accounts</div>
+                                            <div className="font-heading text-3xl text-red-600 mt-1">{flaggedUsers.filter(u => u.isFrozen).length} Users</div>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-xl bg-red-600/10 flex items-center justify-center text-red-600"><ShieldAlert size={20} /></div>
+                                    </div>
+                                    <div className="bg-white p-5 rounded-2xl border border-black/5 flex items-center justify-between">
+                                        <div>
+                                            <div className="text-[10px] font-black text-[#888] uppercase tracking-wider">Security Events Logged</div>
+                                            <div className="font-heading text-3xl text-purple-600 mt-1">{fraudLogs.length} Events</div>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center text-purple-600"><Activity size={20} /></div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                                    {/* Column 1: Flagged & Frozen Accounts */}
+                                    <div className="bg-white rounded-3xl p-6 border border-black/5 shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="font-heading text-xl text-black flex items-center justify-between">
+                                                Flagged Accounts Registry
+                                                <span className="text-[9px] font-black uppercase bg-[#888]/15 px-2 py-0.5 rounded-full text-[#888]">Live Pool</span>
+                                            </h3>
+                                            <p className="text-[10px] font-black text-[#888] uppercase tracking-wider mt-1">Review profiles with active warnings or locks</p>
+                                        </div>
+
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                                            {flaggedUsers.length === 0 ? (
+                                                <div className="text-center py-20 text-[#888] font-bold text-xs">No users currently flagged for policy abuse.</div>
+                                            ) : (
+                                                flaggedUsers.map(user => {
+                                                    const fraudScore = Math.max(user.customerFraudScore || 0, user.driverFraudScore || 0, user.referralFraudScore || 0);
+                                                    return (
+                                                        <div key={user._id} className="p-4 bg-grayBg rounded-2xl border border-black/5 relative overflow-hidden flex flex-col gap-3">
+                                                            {user.isFrozen && (
+                                                                <div className="absolute top-0 right-0 bg-red-600 text-white px-3 py-1 font-heading text-[8px] tracking-widest uppercase rounded-bl-xl font-extrabold z-[15]">
+                                                                    FROZEN
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div>
+                                                                    <h4 className="font-heading text-lg text-black leading-none mb-1 flex items-center gap-2">
+                                                                        {user.name}
+                                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                                                                            user.role === 'driver' ? 'bg-orange/10 text-orange' : 'bg-blue-600/10 text-blue-600'
+                                                                        }`}>{user.role}</span>
+                                                                    </h4>
+                                                                    <div className="text-[10px] font-bold text-[#888]">{user.phone} &bull; {user.email}</div>
+                                                                    {user.deviceFingerprint && (
+                                                                        <div className="text-[9px] font-mono text-[#aaa] mt-1">Fingerprint: <strong className="text-black">{user.deviceFingerprint}</strong></div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-right shrink-0">
+                                                                    <div className="text-[9px] font-black text-[#888] uppercase tracking-wider">Abuse Score</div>
+                                                                    <div className={`font-heading text-2xl font-black ${
+                                                                        fraudScore >= 75 ? 'text-red-600' :
+                                                                        fraudScore >= 40 ? 'text-orange' :
+                                                                        'text-yellow-600'
+                                                                    }`}>{fraudScore}%</div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* User balance & details stats */}
+                                                            <div className="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-xl text-[9px] font-black uppercase text-[#888] border border-black/5">
+                                                                <div className="text-center">
+                                                                    <div>Points</div>
+                                                                    <strong className="text-black font-extrabold text-[11px] mt-0.5 block">{user.loyaltyPoints || 0} ({user.rewardTier})</strong>
+                                                                </div>
+                                                                <div className="text-center border-x border-black/5">
+                                                                    <div>Wallet</div>
+                                                                    <strong className={`font-extrabold text-[11px] mt-0.5 block ${user.walletBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>₹{user.walletBalance || 0}</strong>
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <div>Pending Dues</div>
+                                                                    <strong className={`font-extrabold text-[11px] mt-0.5 block ${user.pendingDues > 0 ? 'text-red-500' : 'text-black'}`}>₹{user.pendingDues || 0}</strong>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Action buttons */}
+                                                            <div className="flex gap-2 flex-wrap mt-1">
+                                                                <button
+                                                                    disabled={isActionLoading}
+                                                                    onClick={() => handleFreezeAccount(user._id, user.isFrozen)}
+                                                                    className={`flex-1 py-2 text-[9px] font-heading tracking-widest uppercase rounded-xl transition-all font-black ${
+                                                                        user.isFrozen 
+                                                                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                                                            : 'bg-red-600 hover:bg-red-700 text-white'
+                                                                    }`}
+                                                                >
+                                                                    {user.isFrozen ? 'UNFREEZE ACCOUNT' : 'FREEZE ACCOUNT'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setAdjustingUser(user)}
+                                                                    className="px-3 py-2 bg-black hover:bg-orange text-white text-[9px] font-heading tracking-widest uppercase rounded-xl transition-all font-black"
+                                                                >
+                                                                    ADJUST
+                                                                </button>
+                                                                {user.deviceFingerprint && (
+                                                                    <button
+                                                                        onClick={() => handleBlacklistDevice(user.deviceFingerprint)}
+                                                                        className="px-2.5 py-2 bg-white border border-black/10 hover:bg-[#111] hover:text-white text-red-600 text-[9px] font-heading tracking-widest uppercase rounded-xl transition-all font-black"
+                                                                    >
+                                                                       BLACKLIST DEVICE
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Column 2: Real-time Threat Logs */}
+                                    <div className="bg-white rounded-3xl p-6 border border-black/5 shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="font-heading text-xl text-black">Security Threat Surveillance Feed</h3>
+                                            <p className="text-[10px] font-black text-[#888] uppercase tracking-wider mt-1">Audit logs of automated engine security violations</p>
+                                        </div>
+
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                                            {fraudLogs.length === 0 ? (
+                                                <div className="text-center py-20 text-[#888] font-bold text-xs">No security violation events logged recently.</div>
+                                            ) : (
+                                                fraudLogs.map(log => {
+                                                    const logDate = new Date(log.date).toLocaleDateString(undefined, {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    });
+                                                    return (
+                                                        <div key={log._id} className="p-4 bg-grayBg rounded-2xl border border-black/5 flex flex-col gap-2">
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <div className="flex items-center gap-2">
+                                                                    <strong className="font-black text-xs text-black">{log.userId?.name || 'User Deleted'}</strong>
+                                                                    <span className="text-[8px] font-black uppercase text-[#aaa] font-mono">({log.userId?.role || 'user'})</span>
+                                                                </div>
+                                                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                                                                    log.type === 'gps_teleportation' ? 'text-red-600 bg-red-500/10 border-red-500/20' :
+                                                                    log.type === 'emulator_usage' ? 'text-purple-600 bg-purple-500/10 border-purple-500/20' :
+                                                                    'text-orange bg-orange/10 border-orange/20'
+                                                                }`}>
+                                                                    {log.type.replace('_', ' ')}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[11px] font-bold text-[#555] leading-relaxed bg-white p-3 rounded-xl border border-black/5">
+                                                                {log.details}
+                                                            </p>
+                                                            <div className="flex items-center justify-between text-[8px] font-black uppercase text-[#aaa] tracking-wide mt-1">
+                                                                <span>Delta: <strong className="text-red-500 font-extrabold">+{log.scoreDelta}%</strong></span>
+                                                                <span>{logDate}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* ADMIN ADJUST OVERLAY MODAL */}
+            {adjustingUser && (
+                <div className="fixed inset-0 z-[10006] bg-black/70 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
+                    <div className="bg-white rounded-[40px] w-full max-w-[450px] shadow-2xl p-8 animate-slide-up relative">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="font-heading text-2xl text-black">Manual Adjustments</h3>
+                                <p className="text-[10px] font-black text-[#888] uppercase tracking-wider mt-1 font-mono">Adjusting user: <strong>{adjustingUser.name}</strong></p>
+                            </div>
+                            <button
+                                onClick={() => setAdjustingUser(null)}
+                                className="w-8 h-8 rounded-xl bg-grayBg hover:bg-black hover:text-white transition-all flex items-center justify-center text-black/50"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+
+                        {/* Adjust Wallet Balance form */}
+                        <form onSubmit={handleWalletAdjustment} className="space-y-4 border-b border-black/5 pb-6 mb-6">
+                            <h4 className="font-heading text-lg text-black">1. Adjust Wallet Balance (INR)</h4>
+                            <div className="flex gap-2">
+                                <input
+                                    type="number"
+                                    required
+                                    placeholder="Amount (e.g. 50 or -20)"
+                                    value={walletAdjAmount}
+                                    onChange={(e) => setWalletAdjAmount(e.target.value)}
+                                    className="flex-1 px-4 py-3 bg-grayBg rounded-2xl outline-none font-bold text-xs text-black border border-transparent focus:border-black/5"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isActionLoading}
+                                    className="bg-black hover:bg-orange text-white px-5 py-3 rounded-2xl font-heading text-sm uppercase tracking-widest disabled:bg-gray-400 active:scale-95 transition-all"
+                                >
+                                    APPLY
+                                </button>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Adjustment Reason (e.g. Refunded cancellation)"
+                                value={adjReason}
+                                onChange={(e) => setAdjReason(e.target.value)}
+                                className="w-full px-4 py-3 bg-grayBg rounded-2xl outline-none font-bold text-xs text-black border border-transparent focus:border-black/5"
+                            />
+                        </form>
+
+                        {/* Adjust Loyalty Points form */}
+                        <form onSubmit={handlePointsAdjustment} className="space-y-4">
+                            <h4 className="font-heading text-lg text-black">2. Adjust Loyalty Points Balance</h4>
+                            <div className="flex gap-2">
+                                <input
+                                    type="number"
+                                    required
+                                    placeholder="Points (e.g. 100 or -50)"
+                                    value={pointsAdjAmount}
+                                    onChange={(e) => setPointsAdjAmount(e.target.value)}
+                                    className="flex-1 px-4 py-3 bg-grayBg rounded-2xl outline-none font-bold text-xs text-black border border-transparent focus:border-black/5"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isActionLoading}
+                                    className="bg-black hover:bg-orange text-white px-5 py-3 rounded-2xl font-heading text-sm uppercase tracking-widest disabled:bg-gray-400 active:scale-95 transition-all"
+                                >
+                                    APPLY
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* LIVE RIDE TRACKING OVERLAY MAP MODAL */}
             {trackingRide && (
@@ -760,12 +1141,13 @@ const AdminHome = () => {
             )}
 
             {/* Mobile Bottom Navigation Bar */}
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[75px] z-[99999] flex bg-white/95 backdrop-blur-[20px] border-t border-black/5 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)]">
+            <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[75px] z-[99999] flex bg-white/95 backdrop-blur-[20px] border-t border-black/5 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] pb-[env(safe-area-inset-bottom)] shrink-0">
                 {[
                     { id: 'overview', label: 'Overview', icon: Activity },
                     { id: 'riders', label: 'Riders', icon: Users },
                     { id: 'drivers', label: 'Drivers', icon: Car },
                     { id: 'rides', label: 'Tracker', icon: MapPin },
+                    { id: 'fraud', label: 'Fraud', icon: ShieldAlert },
                     { id: 'mailbox', label: 'Mailbox', icon: Mail }
                 ].map((item) => {
                     const isActive = activeTab === item.id;
@@ -776,6 +1158,7 @@ const AdminHome = () => {
                                 setActiveTab(item.id);
                                 setSelectedRider(null);
                                 setSelectedDriver(null);
+                                setAdjustingUser(null);
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                             className={`flex-1 flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${

@@ -21,6 +21,20 @@ const BookingSchema = new mongoose.Schema({
     price: { type: Number, required: true },
     status: { type: String, enum: ['pending', 'accepted', 'picked-up', 'ongoing', 'completed', 'cancelled'], default: 'pending' },
     city: { type: String, default: 'Hyderabad' },
+    
+    // Cancellation & Penalty Parameters
+    cancellationFee: { type: Number, default: 0 },
+    cancellationReason: { type: String, default: '' },
+    cancelledBy: { type: String, enum: ['customer', 'driver', 'system', ''], default: '' },
+    cancellationTime: { type: Date },
+    driverAssignedTime: { type: Date },
+    driverArrivedTime: { type: Date },
+    driverWastedDistance: { type: Number, default: 0 }, // in km
+    waitDuration: { type: Number, default: 0 }, // in minutes
+    weatherCondition: { type: String, default: 'Normal' },
+    isSurgeActive: { type: Boolean, default: false },
+    cancellationCompensated: { type: Boolean, default: false },
+
     date: { type: Date, default: Date.now }
 });
 

@@ -107,12 +107,20 @@ const rideRoutes = require('./routes/rides');
 const poolRideRoutes = require('./routes/poolRideRoutes');
 const adminRoutes = require('./routes/admin');
 const reviewsRoutes = require('./routes/reviews');
+const loyaltyRoutes = require('./routes/loyalty');
+const referralRoutes = require('./routes/referrals');
+const penaltyRoutes = require('./routes/penalties');
+const walletRoutes = require('./routes/wallet');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
 app.use('/api/pool-rides', poolRideRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewsRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/referrals', referralRoutes);
+app.use('/api/penalties', penaltyRoutes);
+app.use('/api/wallet', walletRoutes);
 
 // Export the app for Vercel
 module.exports = app;

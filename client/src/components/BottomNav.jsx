@@ -1,12 +1,20 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, Shield, User } from 'lucide-react';
+import { Home, ClipboardList, Shield, User, Wallet } from 'lucide-react';
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navItems = [
+  const userRole = localStorage.getItem('userRole');
+  const isDriver = userRole === 'driver';
+
+  const navItems = isDriver ? [
+    { id: 'navHome', icon: Home, label: 'Home', path: '/' },
+    { id: 'navBookings', icon: ClipboardList, label: 'My Bookings', path: '/bookings' },
+    { id: 'navWallet', icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { id: 'navProfile', icon: User, label: 'Profile', path: '/profile' },
+  ] : [
     { id: 'navHome', icon: Home, label: 'Home', path: '/' },
     { id: 'navBookings', icon: ClipboardList, label: 'My Bookings', path: '/bookings' },
     { id: 'navSupport', icon: Shield, label: 'Support', path: '/support' },

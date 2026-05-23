@@ -97,4 +97,174 @@ router.get('/rides/:rideId/tracking', adminAuth, async (req, res) => {
     }
 });
 
+// GET: Flagged/Frozen users and fraud logs
+router.get('/fraud/flagged-accounts', adminAuth, async (req, res) => {
+    try {
+        const flaggedUsers = await User.find({
+            $or: [
+                { customerFraudScore: { $gt: 0 } },
+                { driverFraudScore: { $gt: 0 } },
+                { referralFraudScore: { $gt: 0 } },
+                { isFrozen: true }
+            ]
+        }).select('-password').sort({ customerFraudScore: -1, driverFraudScore: -1 });
+
+        const fraudLogs = await FraudLog.find({})
+            .populate('userId', 'name email phone role')
+            .sort({ date: -1 });
+
+        res.json({
+            users: flaggedUsers,
+            logs: fraudLogs
+        });
+    } catch (err) {
+        console.error('Fetch flagged accounts error:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+// POST: Freeze or unfreeze an account
+router.post('/freeze-account', adminAuth, async (req, res) => {
+    try {
+        const { userId, isFrozen } = req.body;
+        if (!userId) return res.status(400).json({ msg: 'User ID is required' });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        user.isFrozen = isFrozen;
+        // If unfreezing, reset their fraud score so they aren't auto-frozen immediately
+        if (!isFrozen) {
+            user.customerFraudScore = 0;
+            user.driverFraudScore = 0;
+            user.referralFraudScore = 0;
+        } else {
+            // Force offline if frozen
+            user.isOnline = false;
+        }
+
+        await user.save();
+
+        res.json({
+            msg: `User account successfully ${isFrozen ? 'frozen' : 'unfrozen'}.`,
+            user
+        });
+    } catch (err) {
+        console.error('Freeze account error:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+// POST: Adjust a user's loyalty points manually
+router.post('/manually-adjust-points', adminAuth, async (req, res) => {
+    try {
+        const { userId, pointsDelta } = req.body;
+        if (!userId || pointsDelta === undefined) {
+            return res.status(400).json({ msg: 'User ID and pointsDelta are required' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        user.loyaltyPoints = Math.max(0, (user.loyaltyPoints || 0) + Number(pointsDelta));
+        if (pointsDelta > 0) {
+            user.totalEarnedPoints = (user.totalEarnedPoints || 0) + Number(pointsDelta);
+        }
+
+        // Recheck Tier
+        const LoyaltyTransaction = require('../models/LoyaltyTransaction');
+        const points = user.loyaltyPoints;
+        if (points >= 500) user.rewardTier = 'Platinum';
+        else if (points >= 250) user.rewardTier = 'Gold';
+        else if (points >= 100) user.rewardTier = 'Silver';
+        else user.rewardTier = 'Bronze';
+
+        await user.save();
+
+        // Log transaction
+        const auditLog = new LoyaltyTransaction({
+            userId,
+            points: Number(pointsDelta),
+            type: pointsDelta >= 0 ? 'earn' : 'redeem',
+            description: `Admin Manual Adjustment: ${pointsDelta >= 0 ? '+' : ''}${pointsDelta} points`
+        });
+        await auditLog.save();
+
+        res.json({
+            msg: `Loyalty points adjusted by ${pointsDelta}. New balance: ${user.loyaltyPoints}`,
+            user
+        });
+    } catch (err) {
+        console.error('Manual adjust points error:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+// POST: Reverse a wallet penalty / adjust wallet balance
+router.post('/reverse-penalty', adminAuth, async (req, res) => {
+    try {
+        const { userId, amount, reason } = req.body;
+        if (!userId || !amount) {
+            return res.status(400).json({ msg: 'User ID and adjustment amount are required' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        const WalletTransaction = require('../models/WalletTransaction');
+        user.walletBalance = (user.walletBalance || 0) + Number(amount);
+        
+        // If they had pending dues, reduce dues if adjusting positively
+        if (amount > 0 && user.pendingDues > 0) {
+            const duesReduction = Math.min(user.pendingDues, amount);
+            user.pendingDues -= duesReduction;
+        }
+
+        await user.save();
+
+        const walletTx = new WalletTransaction({
+            userId,
+            amount: Number(amount),
+            type: amount >= 0 ? 'refund' : 'penalty',
+            description: `Admin Adjustment: ${reason || 'Manual override'}`
+        });
+        await walletTx.save();
+
+        res.json({
+            msg: `Wallet adjusted successfully by ₹${amount}. New balance: ₹${user.walletBalance}`,
+            user
+        });
+    } catch (err) {
+        console.error('Reverse penalty error:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+// POST: Blacklist a device fingerprint
+router.post('/blacklist-device', adminAuth, async (req, res) => {
+    try {
+        const { deviceFingerprint } = req.body;
+        if (!deviceFingerprint) {
+            return res.status(400).json({ msg: 'Device fingerprint is required' });
+        }
+
+        // Freeze all users sharing this fingerprint
+        const usersToFreeze = await User.find({ deviceFingerprint });
+        for (const user of usersToFreeze) {
+            user.isFrozen = true;
+            user.isOnline = false;
+            await user.save();
+        }
+
+        res.json({
+            msg: `Successfully blacklisted device fingerprint. Frozen ${usersToFreeze.length} linked account(s).`
+        });
+    } catch (err) {
+        console.error('Blacklist device error:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+const FraudLog = require('../models/FraudLog');
+
 module.exports = router;

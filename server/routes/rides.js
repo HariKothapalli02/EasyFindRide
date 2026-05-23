@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const DriverLocation = require('../models/DriverLocation');
+const loyaltyService = require('../services/loyaltyService');
+const referralService = require('../services/referralService');
 
 // Middleware to verify JWT
 const auth = (req, res, next) => {
@@ -295,10 +297,26 @@ router.post('/cancel', auth, async (req, res) => {
 router.post('/complete', auth, async (req, res) => {
     try {
         const { rideId } = req.body;
-        const booking = await Booking.findByIdAndUpdate(rideId, { status: 'completed' }, { new: true });
-        
+        const booking = await Booking.findById(rideId);
         if (!booking) return res.status(404).json({ msg: 'Booking not found' });
+
+        booking.status = 'completed';
+        await booking.save();
         
+        // 1. Grant loyalty rewards points to rider upon ride completion
+        try {
+            await loyaltyService.grantPoints(booking.userId, booking._id, booking.price);
+        } catch (loyaltyErr) {
+            console.error('[LOYALTY_TRIGGER_ERROR] Failed to grant points:', loyaltyErr);
+        }
+
+        // 2. Process referral payouts checks (e.g. referrer and referee get ₹50)
+        try {
+            await referralService.processFirstRideReward(booking.userId, booking._id);
+        } catch (referralErr) {
+            console.error('[REFERRAL_TRIGGER_ERROR] Failed to process referral payout:', referralErr);
+        }
+
         // Notify Customer via Socket
         const io = req.app.get('io');
         const userSockets = req.app.get('userSockets');

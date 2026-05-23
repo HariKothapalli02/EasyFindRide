@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import BottomNav from '../components/BottomNav';
-import { MapPin, Navigation, Phone, ShieldCheck, Clock, Users } from 'lucide-react';
+import { MapPin, Navigation, Phone, ShieldCheck, Clock, Users, AlertTriangle, HeartPulse } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api, { socket } from '../utils/api';
 import DriverLiveTracker from '../components/DriverLiveTracker';
@@ -14,11 +14,21 @@ const DriverHome = () => {
     const [pendingRides, setPendingRides] = useState([]);
     const [online, setOnline] = useState(true);
     const [city, setCity] = useState(localStorage.getItem('driverCity') || 'Detecting...');
+    const [reliability, setReliability] = useState({
+        reliabilityScore: 100,
+        cancellationsToday: 0,
+        isSuspended: false
+    });
     
     const [userContext, setUserContext] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
     const isCabDriver = ['cab', 'car'].includes(userContext.vehicleType?.toLowerCase());
 
     const toggleOnlineStatus = async () => {
+        if (reliability.isSuspended) {
+            alert('Your account is suspended due to low reliability score or policy violations. You cannot go online.');
+            setOnline(false);
+            return;
+        }
         try {
             const nextOnline = !online;
             setOnline(nextOnline);
@@ -37,6 +47,19 @@ const DriverHome = () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
+
+            // Fetch Driver Reliability details
+            try {
+                const relRes = await api.get('/penalties/driver-reliability');
+                if (relRes.data) {
+                    setReliability(relRes.data);
+                    if (relRes.data.isSuspended) {
+                        setOnline(false);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch reliability info:', e);
+            }
 
             // Always fetch the latest profile to sync online status and vehicleType
             try {
@@ -212,6 +235,97 @@ const DriverHome = () => {
                         <div className="bg-green-500/10 text-green-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                             Live
                         </div>
+                    </div>
+                </div>
+
+                {/* Driver Account Health & Reliability Card */}
+                <div className="bg-white rounded-[32px] p-6 mb-8 border border-black/5 shadow-sm relative overflow-hidden">
+                    {reliability.isSuspended && (
+                        <div className="absolute inset-0 bg-red-600/10 backdrop-blur-[1px] pointer-events-none" />
+                    )}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2.5">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                reliability.isSuspended ? 'bg-red-500/10 text-red-500' :
+                                reliability.reliabilityScore >= 90 ? 'bg-green-500/10 text-green-500' :
+                                reliability.reliabilityScore >= 80 ? 'bg-orange/10 text-orange' :
+                                'bg-yellow-500/10 text-yellow-600'
+                            }`}>
+                                <HeartPulse size={18} className={reliability.isSuspended ? '' : 'animate-pulse'} />
+                            </div>
+                            <span className="text-[10px] font-black text-[#888] uppercase tracking-wider">Account Status & Health</span>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            reliability.isSuspended ? 'bg-red-500/10 text-red-600 border border-red-500/20' :
+                            reliability.reliabilityScore >= 90 ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
+                            reliability.reliabilityScore >= 80 ? 'bg-orange/10 text-orange border border-orange/20' :
+                            'bg-yellow-500/10 text-yellow-600 border border-yellow-500/20'
+                        }`}>
+                            {reliability.isSuspended ? 'SUSPENDED' :
+                             reliability.reliabilityScore >= 90 ? 'EXCELLENT' :
+                             reliability.reliabilityScore >= 80 ? 'GOOD' : 'WARNING'}
+                        </div>
+                    </div>
+
+                    <div className="flex items-end justify-between mb-4">
+                        <div>
+                            <div className="text-[10px] font-bold text-[#888] mb-1">Driver Reliability Score</div>
+                            <div className="flex items-baseline gap-1">
+                                <span className={`text-4xl font-heading font-black ${
+                                    reliability.isSuspended ? 'text-red-600' : 'text-black'
+                                }`}>{reliability.reliabilityScore}%</span>
+                                <span className="text-xs text-[#aaa] font-bold">/ 100%</span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-[10px] font-bold text-[#888] mb-1">Cancellations Today</div>
+                            <div className="text-xl font-heading text-black">{reliability.cancellationsToday} <span className="text-xs text-[#aaa] font-bold">/ 2 free</span></div>
+                        </div>
+                    </div>
+
+                    {/* Reliability Indicator Progress Bar */}
+                    <div className="w-full h-2.5 bg-black/5 rounded-full overflow-hidden mb-4 relative">
+                        <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                                reliability.isSuspended ? 'bg-red-600' :
+                                reliability.reliabilityScore >= 90 ? 'bg-green-500' :
+                                reliability.reliabilityScore >= 80 ? 'bg-orange' :
+                                'bg-yellow-500'
+                            }`}
+                            style={{ width: `${reliability.reliabilityScore}%` }}
+                        />
+                    </div>
+
+                    {/* Dynamic Message Box */}
+                    <div className={`p-4 rounded-2xl border text-xs font-bold leading-relaxed ${
+                        reliability.isSuspended ? 'bg-red-500/5 border-red-500/10 text-red-600' :
+                        reliability.reliabilityScore >= 90 ? 'bg-green-500/5 border-green-500/10 text-green-600' :
+                        reliability.reliabilityScore >= 80 ? 'bg-orange/5 border-orange/10 text-orange-dark' :
+                        'bg-yellow-500/5 border-yellow-500/10 text-yellow-600'
+                    }`}>
+                        {reliability.isSuspended ? (
+                            <div className="flex gap-2">
+                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                <span>Your account has been suspended due to excessively low reliability score. Please pay outstanding dues or contact administrator reviews.</span>
+                            </div>
+                        ) : reliability.reliabilityScore >= 90 ? (
+                            <span>Perfect health. You have top priority in the matching algorithm for incoming rides. Keep it up!</span>
+                        ) : reliability.reliabilityScore >= 80 ? (
+                            <span>Good standing. Regular priority matching is active. Avoid accepting-and-ignoring rides to keep your score high.</span>
+                        ) : (
+                            <div className="flex gap-2">
+                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                <span>Lower priority dispatch active. If score drops below 60%, your driver account will be suspended.</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Cancellation Rules Alert */}
+                    <div className="mt-3.5 pt-3.5 border-t border-black/5 text-[10px] text-[#aaa] font-bold flex items-center justify-between">
+                        <span>Daily Cancel Limit: 2 free</span>
+                        <span className={reliability.cancellationsToday >= 2 ? 'text-red-500 font-extrabold animate-pulse' : ''}>
+                            {reliability.cancellationsToday >= 2 ? 'Next cancellation: ₹20 penalty' : 'Within free daily allowance'}
+                        </span>
                     </div>
                 </div>
 

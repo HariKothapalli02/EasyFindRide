@@ -32,7 +32,8 @@ export const searchLocations = async (query) => {
         return response.data.map(item => ({
             display_name: item.display_name,
             lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon)
+            lng: parseFloat(item.lon),
+            address: item.address
         }));
     } catch (error) {
         console.error('Search Error:', error);
