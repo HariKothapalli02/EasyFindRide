@@ -19,7 +19,9 @@ import {
     Trophy,
     Activity,
     CreditCard,
-    Plus
+    Plus,
+    TrendingUp,
+    CheckCircle2
 } from 'lucide-react';
 import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
